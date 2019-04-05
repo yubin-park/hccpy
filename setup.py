@@ -1,22 +1,14 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
-NAME = "hccpy"
-VERSION = "0.0.1"
-DESCR = "hccpy is a Python implementation of HCC"
-URL = ""
-LICENSE = "Apache 2.0"
-AUTHOR = "Yubin Park"
-EMAIL = "yubin.park@gmail.com"
-SRC_DIR = "hccpy"
-PACKAGES = [SRC_DIR]
-
-if __name__=="__main__":
-    setup(packages=PACKAGES,
-            name=NAME,
-            version=VERSION,
-            description=DESCR,
-            author=AUTHOR,
-            url=URL,
-            license=LICENSE)
+setup(packages=find_packages(),
+    name="hccpy",
+    version="0.0.1",
+    description="hccpy is a Python implementation of HCC",
+    author="Yubin Park",
+    author_email="yubin.park@gmail.com",
+    url="",
+    license="Apaceh 2.0", 
+    include_package_data=True,
+    package_data={"": ["*.TXT", "*.csv"]})
 
 

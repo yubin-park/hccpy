@@ -5,10 +5,10 @@ def read_dx2cc(fn):
     dx2cc = {}
     with open(fn, "r") as fp:
         reader = csv.reader(fp, delimiter="\t")
-        dx2cc = {x[0].strip():x[1].strip() for x in reader}
+        dx2cc = {x[0].strip(): "HCC"+x[1].strip() for x in reader}
     return dx2cc
 
-def read_coef(fn):
+def read_coefn(fn):
     coef = {}
     with open(fn, "r") as fp:
         reader = csv.reader(fp, delimiter=",")
@@ -25,8 +25,8 @@ def read_hier(fn):
             matches = re.findall(pttr, line)
             if len(matches) < 1 or len(matches[0]) < 2:
                 continue
-            k = str(matches[0][0])
-            v = [x.strip() for x in matches[0][1].split(",")]
+            k = "HCC"+str(matches[0][0])
+            v = ["HCC"+x.strip() for x in matches[0][1].split(",")]
             hiers[k] = v 
     return hiers 
 

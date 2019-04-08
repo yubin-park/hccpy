@@ -4,14 +4,23 @@ This module implements the Hierachical Condition Categories that are used for ad
 
 ## Installing
 
+Installing from the source:
+
 ```
 $ git clone git@github.com:yubin-park/hccpy
+$ cd hccpy
 $ python setup.py develop
+```
+Or, simply using `pip`:
+
+```
+$ pip install hccpy
 ```
 
 ## Code Examples
 
-Using `hccpy` is really simple. Please see below for some example usages.
+`hccpy` is really simple to use.
+Please see some examples below:
 
 ```python
 >>> import json

@@ -1,10 +1,10 @@
 import csv
 import re
-from pkg_resources import resource_filename
+from pkg_resources import resource_filename as rscfn
 
 def read_dx2cc(fn):
     dx2cc = {}
-    fn = resource_filename(__name__, fn)
+    fn = rscfn(__name__, fn)
     with open(fn, "r") as fp:
         reader = csv.reader(fp, delimiter="\t")
         dx2cc = {x[0].strip(): "HCC"+x[1].strip() for x in reader}
@@ -12,7 +12,7 @@ def read_dx2cc(fn):
 
 def read_coefn(fn):
     coef = {}
-    fn = resource_filename(__name__, fn)
+    fn = rscfn(__name__, fn)
     with open(fn, "r") as fp:
         reader = csv.reader(fp, delimiter=",")
         header = next(reader)
@@ -23,7 +23,7 @@ def read_coefn(fn):
 def read_hier(fn):
     hiers = {}
     pttr = r"%SET0\(CC=(\d+).+%STR\((.+)\)\)"
-    fn = resource_filename(__name__, fn)
+    fn = rscfn(__name__, fn)
     with open(fn, "r") as fp:
         for line in fp.readlines(): 
             matches = re.findall(pttr, line)
@@ -37,7 +37,7 @@ def read_hier(fn):
 def read_label(fn):
     labels = {}
     pttr = r"HCC(\d+)\s+=\"(.+)\""
-    fn = resource_filename(__name__, fn)
+    fn = rscfn(__name__, fn)
     with open(fn, "r") as fp:
         for line in fp.readlines(): 
             matches = re.findall(pttr, line)

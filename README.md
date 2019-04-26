@@ -7,7 +7,7 @@ This module implements the Hierachical Condition Categories that are used for ad
 Installing from the source:
 
 ```
-$ git clone git@github.com:yubin-park/hccpy
+$ git clone git@github.com:yubin-park/hccpy.git
 $ cd hccpy
 $ python setup.py develop
 ```
@@ -39,6 +39,7 @@ $ pip install hccpy
 `hccpy` is really simple to use.
 Please see some examples below:
 
+### Importing 
 ```python
 >>> import json
 >>> from hccpy.hcc import HCCEngine
@@ -75,6 +76,10 @@ Returns the HCC risk profile of a given patient information.
         medicaid: bool
                   If the patient is in Medicaid or not.
 >>>
+```
+
+### HCC-Profiling a Member with Diagnosis Codes
+```python
 >>> rp = he.profile(["E1169", "I5030", "I509", "I211", "I209", "R05"])
 >>> print(json.dumps(rp, indent=2))
 {
@@ -96,6 +101,10 @@ Returns the HCC risk profile of a given patient information.
   }
 }
 >>>
+```
+
+### HCC-Profiling a New Member
+```python
 >>> rp = he.profile([], elig="NE", age=65)
 >>> print(json.dumps(rp, indent=2))
 {
@@ -113,6 +122,10 @@ Returns the HCC risk profile of a given patient information.
   }
 }
 >>>
+```
+
+### HCC-Profiling a Intitutionalized Member
+```python
 >>> rp = he.profile(["E1169", "I5030", "I509", "I209"], elig="INS")
 >>> print(json.dumps(rp, indent=2))
 {
@@ -134,6 +147,9 @@ Returns the HCC risk profile of a given patient information.
   }
 }
 ```
+
+## License
+Apache 2.0
 
 ## Authors
 - Yubin Park, PhD

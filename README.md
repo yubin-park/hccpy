@@ -24,8 +24,8 @@ $ pip install hccpy
 
 ## File Structure
 
-- `hccpy `: The package source code is located here.
-  - `data`: The raw data directly downloaded from [the National Burequ of Economics Research](https://www.nber.org/data/cms-risk-adjustment.html)
+- `hccpy/ `: The package source code is located here.
+  - `data/`: The raw data files directly downloaded from [the National Burequ of Economics Research](https://www.nber.org/data/cms-risk-adjustment.html)
     - Here, you see the original SAS scripts and data files for the CMS HCC models.
   - `_AGESEXV2.py`: a Python re-write of the `AGESEXV2.TXT` SAS script.
   - `_V2218O1M.py`: a Python re-write of the `V2218O1M.TXT` SAS script.
@@ -33,8 +33,8 @@ $ pip install hccpy
   - `_V22I0ED2.py`: a Python re-write of the `V22I0ED2.TXT` SAS script.
   - `_V2318P1M.py`: a Python re-write of the `V2318P1M.TXT` SAS script.
   - `hcc.py`: the **main** module that combines the various logical components
-  - `utils.py`: utility functions for reading files
-- `test`: test scripts to check the validity of the outputs.
+  - `utils.py`: utility functions for reading data files
+- `tests/`: test scripts to check the validity of the outputs.
 - `LICENSE.txt`: Apache 2.0.
 - `README.md`: This README file.
 - `setup.py`: a set-up script.

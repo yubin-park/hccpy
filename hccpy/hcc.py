@@ -111,4 +111,15 @@ class HCCEngine:
                 }
         return out
 
+    def describe_hcc(self, cc):
+      """Return the medical description of a given Condition Category
+
+      Parameters
+      ----------
+      cc : str
+           The Condition Category of interest
+      """
+      cc = cc.upper().replace("HCC", "")  # cc needs no prefix "HCC"
+      cc_desc = self.label.get(cc, "N/A")
+      return cc_desc
 

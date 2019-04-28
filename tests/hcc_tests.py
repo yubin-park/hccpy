@@ -65,6 +65,23 @@ class TestHCCEngine(unittest.TestCase):
         self.assertTrue(np.isclose(rp["risk_score"], 1.3))
 
 
+    def test_hccdescription(self):
+
+        he = HCCEngine()
+
+        desc = he.describe_hcc("19")
+        self.assertTrue(desc == "Diabetes without Complication")
+
+        desc = he.describe_hcc("HCC19")
+        self.assertTrue(desc == "Diabetes without Complication")
+
+        desc = he.describe_hcc("hcc19")
+        self.assertTrue(desc == "Diabetes without Complication")
+
+        desc = he.describe_hcc("3")
+        self.assertTrue(desc == "N/A")
+
+
 if __name__ == "__main__":
 
     unittest.main()

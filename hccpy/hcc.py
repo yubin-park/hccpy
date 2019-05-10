@@ -111,4 +111,27 @@ class HCCEngine:
                 }
         return out
 
+    def describe_hcc(self, cc):
+      """Return the medical description of a given Condition Category
+
+      Parameters
+      ----------
+      cc : str
+           The Condition Category of interest
+      """
+      cc = cc.upper()
+      cc_desc = self.label.get(cc.replace("HCC", ""), "N/A")  # cc needs no prefix "HCC"
+      if "HCC" not in cc:
+          cc = "HCC{}".format(cc)
+      cc_children = self.hier.get(cc, [])
+      cc_parents = []
+      for k, v in self.hier.items():
+          if cc in v:
+              cc_parents.append(k)
+      out = {
+          "description": cc_desc,
+          "children": cc_children,
+          "parents": cc_parents
+      }
+      return out
 

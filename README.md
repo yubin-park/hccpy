@@ -165,11 +165,29 @@ If a member has a different eligibility status, change the eligibility as follow
 }
 ```
 
+### HCC-Describing a Hierachical Condition Category
+
+To get the description, hierarchy parents and children of a HCC:
+
+```python
+>>> hcc_doc = he.describe_hcc("HCC19")  # either "HCC19", "hcc19" or "19"
+>>> print(json.dumps(hcc_doc, indent=2))
+{
+  "description": "Diabetes without Complication",
+  "children": [],
+  "parents": [
+    "HCC17",
+    "HCC18"
+  ]
+}
+```
+
 ## License
 Apache 2.0
 
 ## Authors
 - Yubin Park, PhD
+- Thomas Chen
 
 ## References
 - https://www.nber.org/data/cms-risk-adjustment.html

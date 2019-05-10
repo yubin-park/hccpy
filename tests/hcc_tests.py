@@ -51,7 +51,6 @@ class TestHCCEngine(unittest.TestCase):
         self.assertTrue(np.isclose(rp["risk_score"], 1.322))
 
 
-
     def test_version(self):
 
         he = HCCEngine(version="22")
@@ -63,6 +62,43 @@ class TestHCCEngine(unittest.TestCase):
         rp = he.profile(["E1169", "I5030", "I509", "I211", "I209", "R05"],
                         age=70, sex="M", elig="CNA")
         self.assertTrue(np.isclose(rp["risk_score"], 1.3))
+
+
+    def test_hccdescription(self):
+
+        he = HCCEngine()
+
+        doc = he.describe_hcc("19")
+        self.assertTrue(doc["description"] == "Diabetes without Complication")
+
+        doc = he.describe_hcc("HCC19")
+        self.assertTrue(doc["description"] == "Diabetes without Complication")
+
+        doc = he.describe_hcc("hcc19")
+        self.assertTrue(doc["description"] == "Diabetes without Complication")
+
+        doc = he.describe_hcc("3")
+        self.assertTrue(doc["description"] == "N/A")
+
+
+    def test_hccfamily(self):
+
+        he = HCCEngine()
+
+        doc = he.describe_hcc("19")
+        self.assertTrue("HCC17" in doc["parents"])
+        self.assertTrue("HCC18" in doc["parents"])
+
+        doc = he.describe_hcc("HCC19")
+        self.assertTrue("HCC17" in doc["parents"])
+        self.assertTrue("HCC18" in doc["parents"])
+
+        doc = he.describe_hcc("HCC19")
+        self.assertTrue(len(doc["children"]) == 0)
+
+        doc = he.describe_hcc("17")
+        self.assertTrue("HCC18" in doc["children"])
+        self.assertTrue("HCC19" in doc["children"])
 
 
 if __name__ == "__main__":

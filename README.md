@@ -5,7 +5,7 @@ Hierachical Condition Categories Python Package.
 This module implements the [Hierachical Condition Categories](https://www.cms.gov/cciio/resources/forms-reports-and-other-resources/downloads/ra-march-31-white-paper-032416.pdf) that are used for adjusting risks for the Medicare population.
 The original SAS implementation can be found [here](https://www.nber.org/data/cms-risk-adjustment.html).
 
-NOTE that this package does not support for ICD-9.
+NOTE: This package does not support for ICD-9.
 
 ## Installing
 
@@ -97,11 +97,18 @@ To get a HCC profile from a list of diagnosis codes (in ICD-10):
   "risk_score": 1.314,
   "details": {
     "CNA_M70_74": 0.379,
-    "CNA_HCC18": 0.318,
     "CNA_HCC85": 0.323,
+    "CNA_HCC18": 0.318,
     "CNA_HCC88": 0.14,
     "CNA_HCC85_gDiabetesMellit": 0.154
   },
+  "hcc_lst": [
+    "HCC85",
+    "HCC18",
+    "HCC88",
+    "HCC85_gDiabetesMellit",
+    "DIABETES_CHF"
+  ],
   "parameters": {
     "age": 70,
     "sex": "M",
@@ -126,6 +133,7 @@ If a member is new, then provide the `elig="NE"` in the input:
   "details": {
     "NE_NMCAID_NORIGDIS_NEM65": 0.514
   },
+  "hcc_lst": [],
   "parameters": {
     "age": 65,
     "sex": "M",
@@ -154,6 +162,13 @@ If a member has a different eligibility status, change the eligibility as follow
     "INS_HCC18": 0.441,
     "INS_DIABETES_CHF": 0.154
   },
+  "hcc_lst": [
+    "HCC88",
+    "HCC85",
+    "HCC18",
+    "HCC85_gDiabetesMellit",
+    "DIABETES_CHF"
+  ],
   "parameters": {
     "age": 70,
     "sex": "M",
@@ -181,6 +196,27 @@ To get the description, hierarchy parents and children of a HCC:
   ]
 }
 ```
+
+### Eligible Risk Adjustment Codes
+
+Not all claims are eligible for risk adjustment.
+For professional claims, a certain set of CPT codes is required to be eligible, while for institutional claims, a certain set of bill types is needed.
+This module provides an easy interface for determining if a certain claim is eligible for risk adjustment or not.
+
+NOTE: This function uses CPT codes, and this requires [AMA CPT license](https://www.ama-assn.org/practice-management/cpt/ama-cpt-licensing-overview).
+Once you carefully review the license, you need to download [a data file](https://www.cms.gov/Medicare/Health-Plans/MedicareAdvtgSpecRateStats/Downloads/2019-Medicare-CPT-HCPC-List.zip).
+
+```python
+>>> from hccpy.raeligible import RAEligible
+>>> rae = RAEligible()
+>>> rae.load(fn="CY2019Q2_CPTHCPCS_CMS_20190425.csv")
+>>> rae.is_eligible(pr_lst=["C5271"])
+True
+>>> rae.is_eligible(pr_lst=["C5270"])
+False
+>>>
+```
+NOTE: The data file (`CY2019Q2_CPTHCPCS_CMS_20190425.csv`) should be located in the same folder.
 
 ## License
 Apache 2.0

@@ -100,6 +100,16 @@ class TestHCCEngine(unittest.TestCase):
         self.assertTrue("HCC18" in doc["children"])
         self.assertTrue("HCC19" in doc["children"])
 
+    def test_diff(self):
+
+        he = HCCEngine()
+        out = he.diff(before=["HCC18"], after=["HCC18", "HCC01"])
+        self.assertTrue("HCC01" in out["added"])
+
+        out = he.diff(before=["HCC19"], after=["HCC18", "HCC01"])
+        self.assertTrue("HCC01" in out["added"])
+        self.assertTrue("HCC19" not in out["deleted"])
+        self.assertEqual(len(out["deleted"]), 0)
 
 if __name__ == "__main__":
 

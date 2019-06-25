@@ -100,6 +100,7 @@ class HCCEngine:
         out = {
                 "risk_score": score,
                 "details": risk_dct,
+                "hcc_lst": hcc_lst,
                 "parameters": {
                     "age": age,
                     "sex": sex,
@@ -112,26 +113,69 @@ class HCCEngine:
         return out
 
     def describe_hcc(self, cc):
-      """Return the medical description of a given Condition Category
+        """
+        Return the medical description of a given Condition Category
+        
+        Parameters
+        ----------
+        cc : str
+            The Condition Category of interest
+        """
+        cc = cc.upper()
+        # cc needs no prefix "HCC"
+        cc_desc = self.label.get(cc.replace("HCC", ""), "N/A")  
+        if "HCC" not in cc:
+            cc = "HCC{}".format(cc)
+        cc_children = self.hier.get(cc, [])
+        cc_parents = []
+        for k, v in self.hier.items():
+            if cc in v:
+                cc_parents.append(k)
+        out = {
+            "description": cc_desc,
+            "children": cc_children,
+            "parents": cc_parents
+        }
+        return out
 
-      Parameters
-      ----------
-      cc : str
-           The Condition Category of interest
-      """
-      cc = cc.upper()
-      cc_desc = self.label.get(cc.replace("HCC", ""), "N/A")  # cc needs no prefix "HCC"
-      if "HCC" not in cc:
-          cc = "HCC{}".format(cc)
-      cc_children = self.hier.get(cc, [])
-      cc_parents = []
-      for k, v in self.hier.items():
-          if cc in v:
-              cc_parents.append(k)
-      out = {
-          "description": cc_desc,
-          "children": cc_children,
-          "parents": cc_parents
-      }
-      return out
+    def diff(self, before=[], after=[]):
+        """
+        Return the difference between two HCC lists (before and after)
+       
+        Background
+        ----------
+        CCs evolve over years. As patients get older, new CCs are added, 
+        some pre-exisited CCs may disappear. Sometimes, CCs get assigned to
+        a higher level (or parent) CCs as the conditinos become more 
+        serious. This module provides the difference between "before" and
+        "after" and highlights what are "added (both new and upgraded)", 
+        "deleted".
+
+        Parameters
+        ----------
+        before : list
+                a list of CCs that were present before
+        after : list
+                a list of CCs that are present curretly
+        """
+        before_set = set(before)
+        after_set = set(after)
+        added_set = after_set - before_set
+        deleted_set = before_set - after_set
+
+        truly_deleted = []
+        for deleted_item in deleted_set:
+            desc = self.describe_hcc(deleted_item)
+            if not any((p in added_set) for p in desc["parents"]):
+                truly_deleted.append(deleted_item) 
+        out = {
+            "added": list(added_set),
+            "deleted": truly_deleted
+            }
+        return out
+
+
+
+
+
 

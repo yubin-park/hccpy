@@ -10,7 +10,7 @@ def get_risk_dct(coefn, hcc_lst, age, sex, elig, origds):
         elig_demo += "_" 
     elig_demo += sex
 
-    age_ranges = [x for x in coefn if elig_demo in x]
+    age_ranges = [x for x in coefn.keys() if elig_demo in x]
     age_match = ""
     for age_range in age_ranges:
         age_tokens = age_range.replace(elig_demo, "").split("_") 
@@ -28,6 +28,8 @@ def get_risk_dct(coefn, hcc_lst, age, sex, elig, origds):
             break
     if age_match in coefn:
         risk_dct[age_match] = coefn[age_match]
+    else:
+        risk_dct[age_match] = 0.0 # NOTE: default value
 
     if origds > 0:
         elig_origds = elig + "_OriginallyDisabled_"
@@ -37,12 +39,16 @@ def get_risk_dct(coefn, hcc_lst, age, sex, elig, origds):
             elig_origds += "Femle" 
         if elig_origds in coefn:
             risk_dct[elig_origds] = coefn[elig_origds]
+        else:
+            risk_dct[elig_origds] = 0.0 # NOTE: default value
 
     # hcc factors
     for hcc in hcc_lst:
         elig_hcc = elig + "_" + hcc
         if elig_hcc in coefn:
             risk_dct[elig_hcc] = coefn[elig_hcc]
+        else:
+            risk_dct[elig_hcc] = 0.0 # NOTE: default value
 
     return risk_dct
 

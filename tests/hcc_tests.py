@@ -51,7 +51,7 @@ class TestHCCEngine(unittest.TestCase):
         self.assertTrue(np.isclose(rp["risk_score"], 1.322))
 
 
-    def test_version(self):
+    def test_versionyear(self):
 
         he = HCCEngine(version="22")
         rp = he.profile(["E1169", "I5030", "I509", "I211", "I209", "R05"],
@@ -63,6 +63,11 @@ class TestHCCEngine(unittest.TestCase):
                         age=70, sex="M", elig="CNA")
         self.assertTrue(np.isclose(rp["risk_score"], 1.3))
 
+        he = HCCEngine(version="24")
+        rp = he.profile(["E1169", "I5030", "I509", "I211", "I209", "R05"],
+                        age=70, sex="M", elig="CNA")
+        self.assertTrue(np.isclose(rp["risk_score"], 1.3))
+        self.assertTrue("CNA_D3" in rp["details"])
 
     def test_hccdescription(self):
 

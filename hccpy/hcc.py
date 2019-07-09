@@ -1,29 +1,37 @@
 import numpy as np
 from collections import Counter
 import hccpy.utils as utils
-import hccpy._V22I0ED2 as V22I0ED2 # age sex edits (v22, v23)
+import hccpy._V22I0ED2 as V22I0ED2 # age sex edits (v22, v23,  v24)
 import hccpy._V2218O1M as V2218O1M # interactions (v22)
 import hccpy._V2318P1M as V2318P1M # interactions (v23)
-import hccpy._AGESEXV2 as AGESEXV2 # disabled/origds (v22, v23)
-import hccpy._V2218O1P as V2218O1P # risk coefn (v22, v23)
+import hccpy._V2419P1M as V2419P1M # interactions (v24)
+import hccpy._AGESEXV2 as AGESEXV2 # disabled/origds (v22, v23, v24)
+import hccpy._V2218O1P as V2218O1P # risk coefn (v22, v23, v24)
 
 class HCCEngine:
 
-    def __init__(self, version="22"):
+    def __init__(self, version="22", year="2019"):
         fnmaps = {
-                    "22": {
-                            "dx2cc": "data/F2218O1P.TXT",
-                            "coefn": "data/V22hcccoefn.csv",
-                            "label": "data/V22H79L1.TXT",
-                            "hier": "data/V22H79H1.TXT"
-                    },
-                    "23": {
-                            "dx2cc": "data/F2318P1Q.TXT",
-                            "coefn": "data/V23hcccoefn.csv",
-                            "label": "data/V23H83L2.TXT",
-                            "hier": "data/V23H83H1.TXT"
-                    }
+                "22": {
+                    "dx2cc": "data/F2218O1P.TXT",
+                    "coefn": "data/V22hcccoefn.csv",
+                    "label": "data/V22H79L1.TXT",
+                    "hier": "data/V22H79H1.TXT"
+                },
+                "23": {
+                    "dx2cc": "data/F2318P1Q.TXT",
+                    "coefn": "data/V23hcccoefn.csv",
+                    "label": "data/V23H83L2.TXT",
+                    "hier": "data/V23H83H1.TXT"
+                },
+                "24": {
+                    "dx2cc": "data/F2419P1M.TXT",
+                    "coefn": "data/V23hcccoefn.csv", # NOTE: V24 not yet
+                    "label": "data/V24H86L1.TXT",
+                    "hier": "data/V24H86H1.TXT"
                 }
+
+            }
         self.version = version
         self.dx2cc = utils.read_dx2cc(fnmaps[version]["dx2cc"])
         self.coefn = utils.read_coefn(fnmaps[version]["coefn"])
@@ -54,6 +62,8 @@ class HCCEngine:
             cc_lst = V2218O1M.create_interactions(cc_lst, disabled)
         elif self.version == "23":
             cc_lst = V2318P1M.create_interactions(cc_lst, disabled, age)
+        elif self.version == "24":
+            cc_lst = V2419P1M.create_interactions(cc_lst, disabled, age)
 
         return cc_lst
 

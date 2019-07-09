@@ -15,9 +15,9 @@ def read_coefn(fn):
     fn = rscfn(__name__, fn)
     with open(fn, "r") as fp:
         reader = csv.reader(fp, delimiter=",")
-        header = next(reader)
+        header = [k.strip() for k in next(reader)]
         values = [float(x) for x in next(reader)]
-        coef = {k.strip(): v for k, v in zip(header, values)}
+        coef = {k: v for k, v in zip(header, values)}
     return coef
 
 def read_hier(fn):
@@ -47,7 +47,5 @@ def read_label(fn):
             v = matches[0][1].strip()
             labels[k] = v 
     return labels
-
-
 
 

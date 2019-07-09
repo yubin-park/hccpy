@@ -4,6 +4,7 @@ Hierachical Condition Categories Python Package.
 
 This module implements the [Hierachical Condition Categories](https://www.cms.gov/cciio/resources/forms-reports-and-other-resources/downloads/ra-march-31-white-paper-032416.pdf) that are used for adjusting risks for the Medicare population.
 The original SAS implementation can be found [here](https://www.nber.org/data/cms-risk-adjustment.html).
+Currently, hccpy supports V22, V23, and V24 (beta).
 
 NOTE: This package does not support for ICD-9.
 
@@ -32,6 +33,7 @@ $ pip install hccpy
   - `_V2218O1P.py`: a Python re-write of the `V2219O1P.TXT` SAS script.
   - `_V22I0ED2.py`: a Python re-write of the `V22I0ED2.TXT` SAS script.
   - `_V2318P1M.py`: a Python re-write of the `V2318P1M.TXT` SAS script.
+  - `_V2419P1M.py`: a Python re-write of the `V2419P1M.TXT` SAS script.
   - `hcc.py`: the **main** module that combines the various logical components
   - `utils.py`: utility functions for reading data files
 - `tests/`: test scripts to check the validity of the outputs.

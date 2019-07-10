@@ -49,8 +49,8 @@ class HCCEngine:
 
         return cc_lst
 
-    def _apply_hcc(self, dx_lst, age, sex, disabled):
-        """Returns all HCC variables regardless of the eligibility segments.
+    def _apply_hierarchies(self, dx_lst, age, sex, disabled):
+        """Returns a list of HCCs after applying hierarchies.
         """
 
         dx_set = {dx.strip().upper().replace(".","") for dx in dx_lst}
@@ -58,6 +58,12 @@ class HCCEngine:
 
         cc_lst = V22I0ED2.apply_agesex_edits(cc_dct, age, sex)
         cc_lst = self._apply_hierarchy(cc_lst)
+
+        return cc_lst
+
+    def _apply_interactions(self, cc_lst, age, disabled):
+        """Returns a list of HCCs after applying interactions.
+        """
         if self.version == "22":
             cc_lst = V2218O1M.create_interactions(cc_lst, disabled)
         elif self.version == "23":
@@ -102,8 +108,9 @@ class HCCEngine:
         """
 
         disabled, origds, elig = AGESEXV2.get_ds(age, orec, medicaid, elig)
-        hcc_lst = self._apply_hcc(dx_lst, age, sex, disabled)
-        risk_dct = V2218O1P.get_risk_dct(self.coefn, hcc_lst, age, 
+        hcc_lst = self._apply_hierarchies(dx_lst, age, sex, disabled)
+        ihcc_lst = self._apply_interactions(hcc_lst, age, disabled)
+        risk_dct = V2218O1P.get_risk_dct(self.coefn, ihcc_lst, age, 
                                         sex, elig, origds)
 
         score = np.sum([x for x in risk_dct.values()])
@@ -111,6 +118,7 @@ class HCCEngine:
                 "risk_score": score,
                 "details": risk_dct,
                 "hcc_lst": hcc_lst,
+                "ihcc_lst": ihcc_lst,
                 "parameters": {
                     "age": age,
                     "sex": sex,

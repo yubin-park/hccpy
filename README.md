@@ -102,9 +102,15 @@ To get a HCC profile from a list of diagnosis codes (in ICD-10):
     "CNA_HCC85": 0.323,
     "CNA_HCC18": 0.318,
     "CNA_HCC88": 0.14,
-    "CNA_HCC85_gDiabetesMellit": 0.154
+    "CNA_HCC85_gDiabetesMellit": 0.154,
+    "CNA_DIABETES_CHF": 0.0
   },
   "hcc_lst": [
+    "HCC85",
+    "HCC18",
+    "HCC88"
+  ],
+  "ihcc_lst": [
     "HCC85",
     "HCC18",
     "HCC88",
@@ -136,6 +142,7 @@ If a member is new, then provide the `elig="NE"` in the input:
     "NE_NMCAID_NORIGDIS_NEM65": 0.514
   },
   "hcc_lst": [],
+  "ihcc_lst": [],
   "parameters": {
     "age": 65,
     "sex": "M",
@@ -156,17 +163,23 @@ If a member has a different eligibility status, change the eligibility as follow
 >>> rp = he.profile(["E1169", "I5030", "I509", "I209"], elig="INS")
 >>> print(json.dumps(rp, indent=2))
 {
-  "risk_score": 2.6059999999999994,
+  "risk_score": 2.606,
   "details": {
     "INS_M70_74": 1.323,
-    "INS_HCC88": 0.497,
     "INS_HCC85": 0.191,
+    "INS_HCC88": 0.497,
     "INS_HCC18": 0.441,
+    "INS_HCC85_gDiabetesMellit": 0.0,
     "INS_DIABETES_CHF": 0.154
   },
   "hcc_lst": [
-    "HCC88",
     "HCC85",
+    "HCC88",
+    "HCC18"
+  ],
+  "ihcc_lst": [
+    "HCC85",
+    "HCC88",
     "HCC18",
     "HCC85_gDiabetesMellit",
     "DIABETES_CHF"

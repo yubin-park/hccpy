@@ -28,7 +28,7 @@ def get_risk_dct(coefn, hcc_lst, age, sex, elig, origds):
             break
     if age_match in coefn:
         risk_dct[age_match] = coefn[age_match]
-    else:
+    elif age_match != "":
         risk_dct[age_match] = 0.0 # NOTE: default value
 
     if origds > 0:

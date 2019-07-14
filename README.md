@@ -247,5 +247,5 @@ Apache 2.0
 - https://github.com/AlgorexHealth/hcc-python
 - https://github.com/galtay/hcc_risk_models
 - https://www.cms.gov/cciio/resources/forms-reports-and-other-resources/downloads/ra-march-31-white-paper-032416.pdf
-
+- https://www.cms.gov/cciio/resources/regulations-and-guidance/index.html
 

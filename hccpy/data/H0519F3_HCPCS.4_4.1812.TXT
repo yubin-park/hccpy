@@ -1,0 +1,43 @@
+C9029	9	Immune suppressants and Immunomodulators
+C9482	3	Antiarrhythmics
+J0129	9	Immune suppressants and Immunomodulators
+J0135	9	Immune suppressants and Immunomodulators
+J0202	8	Multiple Sclerosis Agents
+J0282	3	Antiarrhythmics
+J0480	9	Immune suppressants and Immunomodulators
+J0490	9	Immune suppressants and Immunomodulators
+J0717	9	Immune suppressants and Immunomodulators
+J0881	4	Phosphate Binders
+J0885	4	Phosphate Binders
+J0887	4	Phosphate Binders
+J1160	3	Antiarrhythmics
+J1205	12	Diuretics, Loop and Select Potassium-Sparing
+J1270	4	Phosphate Binders
+J1300	9	Immune suppressants and Immunomodulators
+J1324	1	Anti-HIV Agents
+J1438	9	Immune suppressants and Immunomodulators
+J1595	8	Multiple Sclerosis Agents
+J1602	9	Immune suppressants and Immunomodulators
+J1610	7	Anti-Diabetic Agents, Except Insulin and Metformin Only
+J1742	3	Antiarrhythmics
+J1745	9	Immune suppressants and Immunomodulators
+J1815	6	Insulin
+J1817	6	Insulin
+J1826	8	Multiple Sclerosis Agents
+J1830	8	Multiple Sclerosis Agents
+J1940	12	Diuretics, Loop and Select Potassium-Sparing
+J2323	8	Multiple Sclerosis Agents
+J2350	8	Multiple Sclerosis Agents
+J2501	4	Phosphate Binders
+J2690	3	Antiarrhythmics
+J3262	9	Immune suppressants and Immunomodulators
+J3357	9	Immune suppressants and Immunomodulators
+J3358	9	Immune suppressants and Immunomodulators
+J3380	9	Immune suppressants and Immunomodulators
+J3485	1	Anti-HIV Agents
+J7639	10	Cystic Fibrosis Agents
+J7682	10	Cystic Fibrosis Agents
+Q3028	8	Multiple Sclerosis Agents
+Q5102	9	Immune suppressants and Immunomodulators
+Q5103	9	Immune suppressants and Immunomodulators
+Q5104	9	Immune suppressants and Immunomodulators

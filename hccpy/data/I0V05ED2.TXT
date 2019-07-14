@@ -1,0 +1,156 @@
+%MACRO I0V05ED2(AGERTI=, AGEMCE=, SEX=, ICD0= );
+ **********************************************************************
+ 1 MACRO NAME:  I0V05ED2 : corrected I0V05ED1 
+                see email from Sara Freeman Tue 10/9/2018 6:09 PM
+                UDXG update V0119 for V05 HHS model
+                ICD10 codes valid in FY2018 or FY2019.
+                
+ 2 PURPOSE:     age/sex edits on &ICD0 - are based on:
+                1. RTI age/sex splits
+                2. MCE list to check if age or sex
+                 is within the range of acceptable age/sex, if not- CC
+                 is set to -1.0 - invalid
+
+ 3 PARAMETERS:  AGERTI- age for CC splits (=AGE_LAST)
+                AGEMCE- age for MCE edits (=AGE_AT_DIAGNOSIS)
+                SEX   - SEX
+                &ICD0  - diagnosis variable in a diagnosis file
+ 4 COMMENTS:    1. Age format AGEFMT0 and sex format SEXFMT0 are
+                   parameters in the main macro. They must correspond
+                   to the years of data
+                2. If &ICD0 code does not have any restriction on age
+                   or sex then the corresponding format puts it in "-1"
+                3. AGEL format sets lower limits for age
+                   AGEU format sets upper limit for age
+                   for specific edit categories:
+                   "0"= "0 newborn (age 0)      "
+                   "1"= "1 pediatric (age 0 -17)"
+                   "2"= "2 maternity (age 12-55)"
+                   "3"= "3 adult (age 14+)      "
+                4. Macro sent via email verified using files.
+                   NB!! UDXGV0119 has the same RTI edits as UDXGV0318, 
+                   ICD10 level edits changed because new codes are added 
+                   compare results:
+                   master_UDXGV0318_hhs_HCCV05_SoftEditMacroPrep.sas
+                   with 
+                   master_UDXGV0119_hhs_HCCV05_SoftEditMacroPrep.sas
+ **********************************************************************;
+ * RTI age/sex splits;
+ * codes are not cross-walked to CC if age condition is not met;
+ IF &AGERTI < 18  and
+    &ICD0 IN ("C9100","C9101","C9102",
+              "C9500","C9501","C9502",
+              "C7400","C7401","C7402","C7410","C7411","C7412",
+              "C7490","C7491","C7492"
+               )
+ THEN CC="9" ; /*Split acute lymphoid and other acute 
+ leukemias, except  myeloid diagnoses to age 18+ (HCC 8) 
+ and age <18 (HCC 9). Split adrenal gland cancer diagnoses
+ to age 18+ (HCC 10) and age <18 (HCC 9).*/
+
+ ELSE
+ IF &AGERTI < 18  and
+    &ICD0 IN ("J410","J411","J418","J42","J440","J441" )
+ THEN CC="161" ; /*Split chronic bronchitis diagnoses to age 18+ 
+ (HCC 160) and age <18 (HCC 161).*/
+
+ ELSE
+ IF &AGERTI < 2  and
+    &ICD0 IN (         "K55011","K55012","K55019","K55021","K55022",
+              "K55029","K55031","K55032","K55039","K55041","K55042",
+              "K55049","K55051","K55052","K55059","K55061","K55062",
+              "K55069","K5530", "K5531", "K5532", "K5533" ) 
+ THEN CC="42" ; /*Split acute vascular insufficiency of intestine 
+ diagnosis to age 2+ (HCC 154) and age <2 (HCC 42).*/
+
+ ELSE
+ IF &AGERTI < 50  and
+    &ICD0 IN ("C50011","C50012","C50019","C50021","C50022","C50029",
+              "C50111","C50112","C50119","C50121","C50122","C50129",
+              "C50211","C50212","C50219","C50221","C50222","C50229",
+              "C50311","C50312","C50319","C50321","C50322","C50329",
+              "C50411","C50412","C50419","C50421","C50422","C50429",
+              "C50511","C50512","C50519","C50521","C50522","C50529",
+              "C50611","C50612","C50619","C50621","C50622","C50629",
+              "C50811","C50812","C50819","C50821","C50822","C50829",
+              "C50911","C50912","C50919","C50921","C50922","C50929" )
+ THEN CC="11" ; /*Split breast cancer diagnoses to age 50+ (HCC 12) 
+ and age <50 (HCC 11).*/
+
+ ELSE
+ IF &AGERTI < 2  and
+      &ICD0 IN ("J430","J431","J432","J438","J439","J449","J982",
+                "J983" )
+ THEN CC="-1.0" ; /*Split emphysema diagnoses to age 18+ (HCC 160) 
+ and age 2-17 (HCC160; split not needed in HHS model). 
+ If age <2 out of payment model.*/ 
+
+ ELSE
+ IF &AGERTI ne 0  and
+    &ICD0 IN ("P0500","P0501","P0502","P0503","P0504","P0505",
+              "P0506","P0507","P0508","P0509","P0510","P0511",
+              "P0512","P0513","P0514","P0515","P0516","P0517",
+              "P0518","P0519","P052", "P059", "P0700","P0701",
+              "P0702","P0703","P0710","P0714","P0715","P0716",
+              "P0717","P0718","P0720","P0721","P0722","P0723",
+              "P0724","P0725","P0726","P0730","P0731","P0732",
+              "P0733","P0734","P0735","P0736","P0737","P0738",
+              "P0739","P080", "P081", "P0821","P0822" )
+ THEN CC="-1.0" ; /*Edit for newborn low birthweight. 
+  If age 1+ out of payment model.*/
+
+ ELSE
+ IF &AGERTI >= 1  and
+    &ICD0 IN ("Q894" )
+ THEN CC="97" ; /*Split conjoined twins diagnoses to age 1+ (HCC 97) 
+ and age <1 (HCC 247).*/
+
+ ELSE
+ IF &AGERTI >= 2  and &ICD0 IN ("K551","K558","K559",
+              "P041", "P0411","P0412","P0413","P0414","P0415",
+              "P0416","P0417","P0418","P0419","P041A",
+              "P042", "P043", "P0440","P0441","P0442","P0449",
+              "P045", "P046", "P048", "P0481","P0489",
+              "P049", "P930", "P938", "P961", "P962",
+              "Q390", "Q391", "Q392", "Q393", "Q394", "Q6410",
+              "Q6411","Q6412","Q6419","Q790", "Q791", "Q792",
+              "Q793", "Q794", "Q7951" )
+ THEN CC="-1.0" ; /*If age 2+ out of payment model.*/
+
+ ELSE
+ IF &AGERTI >= 2  and
+    &ICD0 IN ("P270","P271","P278","P279" )
+ THEN CC="162" ; /*Split chronic respiratory disease arising in the 
+ perinatal period diagnoses to age 2+ (HCC 162) and age <2 (HCC 127).*/
+
+ ELSE
+ IF (&AGERTI < 6 or &AGERTI > 18 ) and
+    &ICD0 in ("F3481")
+ THEN CC="-1.0" ; /*Edit for targeted age of diagnosis. If age <6 or age >18 out of payment model.*/
+
+ELSE 
+ IF &SEX="2"  and
+    &ICD0 IN ("D66","D67" )
+ THEN CC="75" ; /*Split hemophilia diagnoses to male (HCC 66 if age <65 
+ or HCC 66 if age 65+; age split not needed in HHS model) 
+ and female (HCC 75).*/
+
+ * MCE edits;
+ * check if age is within acceptable range;
+ _tage=put(&ICD0, $&AGEFMT0..);
+ if _tage ne "-1" and
+  (&AGEMCE < input(put(_tage, $AGEL.),8.) or
+   &AGEMCE > input(put(_tage, $AGEU.),8.)) then cc="-1.0";
+ * check if sex for a person is the one in the MCE file;
+ _tsex=put(&ICD0, $&SEXFMT0..);
+ if _tsex ne "-1"  and _tsex ne &SEX then cc="-1.0";
+
+ %MEND I0V05ED2;
+
+
+
+
+
+
+
+

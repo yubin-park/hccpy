@@ -38,27 +38,16 @@ class HCCEngine:
         self.label = utils.read_label(fnmaps[version]["label"])
         self.hier = utils.read_hier(fnmaps[version]["hier"])
 
-    def _apply_hierarchy(self, cc_lst):
-
+    def _apply_hierarchy(self, cc_dct, age, sex):
+        """Returns a list of HCCs after applying hierarchy and age/sex edit
+        """
+        cc_lst = V22I0ED2.apply_agesex_edits(cc_dct, age, sex)
         cc_cnt = Counter(cc_lst)
         for k, v in self.hier.items():
             if k in cc_cnt:
                 for v_i in v:
                     cc_cnt[v_i] -= 1
         cc_lst = [k for k, v in cc_cnt.items() if v > 0]
-
-        return cc_lst
-
-    def _apply_hierarchies(self, dx_lst, age, sex, disabled):
-        """Returns a list of HCCs after applying hierarchies.
-        """
-
-        dx_set = {dx.strip().upper().replace(".","") for dx in dx_lst}
-        cc_dct = {dx:self.dx2cc[dx] for dx in dx_set if dx in self.dx2cc}
-
-        cc_lst = V22I0ED2.apply_agesex_edits(cc_dct, age, sex)
-        cc_lst = self._apply_hierarchy(cc_lst)
-
         return cc_lst
 
     def _apply_interactions(self, cc_lst, age, disabled):
@@ -108,7 +97,10 @@ class HCCEngine:
         """
 
         disabled, origds, elig = AGESEXV2.get_ds(age, orec, medicaid, elig)
-        hcc_lst = self._apply_hierarchies(dx_lst, age, sex, disabled)
+
+        dx_set = {dx.strip().upper().replace(".","") for dx in dx_lst}
+        cc_dct = {dx:self.dx2cc[dx] for dx in dx_set if dx in self.dx2cc}
+        hcc_lst = self._apply_hierarchy(cc_dct, age, sex)
         ihcc_lst = self._apply_interactions(hcc_lst, age, disabled)
         risk_dct = V2218O1P.get_risk_dct(self.coefn, ihcc_lst, age, 
                                         sex, elig, origds)
@@ -117,8 +109,9 @@ class HCCEngine:
         out = {
                 "risk_score": score,
                 "details": risk_dct,
-                "hcc_lst": hcc_lst,
-                "ihcc_lst": ihcc_lst,
+                "hcc_lst": hcc_lst,    # HCC list before interactions
+                "hcc_map": cc_dct,     # before applying hierarchy
+                #"ihcc_lst": ihcc_lst,   # after applying interactions
                 "parameters": {
                     "age": age,
                     "sex": sex,

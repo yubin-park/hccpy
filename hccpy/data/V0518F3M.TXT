@@ -1,0 +1,2341 @@
+ %macro V0518F3M(INP=, IND=, INN=, INH=, OUTDATA=, 
+                 IDVAR=, KEEPVAR=,
+                 CCFMT0Y1=, CCFMT0Y2=, NDCFMTN=, NDCFMTH=, AGEFMT0=, SEXFMT0=,
+                 AGESEXMAC=AGESEXV6, I0EMACRO=I0V05ED2,
+                 LABELMAC=V05128L1,  HIERMAC=V05128H1,  SCOREMAC=SCOREV4);
+
+ %**********************************************************************
+ * V0518F3M creates HHS HCCs, RXCs and score variables for each enrollee
+ * in the user-provided PERSON SAS dataset.
+ *
+ * If an enrollee has at least one diagnosis in the DIAG SAS dataset
+ * (provided by the user) then HHS HCC variables are created, otherwise HHS HCCs
+ * are set to 0 for the enrollee.
+ *
+ * If an enrollee has at least one NDC in the NDC SAS dataset (provided by the user), 
+ * or at least one HCPCS in the HCPCS SAS dataset then RXC variables are created, 
+ * otherwise RXCs are set to 0 for the enrollee.
+ *
+ * Score variables are created using calibration coefficients from three
+ * models (Adult, Child, Infant), each with five `metal` levels
+ * (Platinum, Gold, Silver, Bronze, Catastrophic).
+ *
+ * All input SAS datasets, PERSON, DIAG, HCPCS, and NDC, must be sorted by person ID,
+ * i.e., the user must ensure that each dataset is sorted by the common identifier
+ * named in macro variable &IDVAR.
+ *
+ * The PERSON SAS dataset must contain variables as noted in the comments for V0518F3P.
+ *
+ * The DIAG SAS dataset must contain variables as noted in the comments for V0518F3P.
+ *
+ * The NDC SAS dataset must contain variables as noted in the comments for V0518F3P.
+ *
+ * The HCPCS SAS dataset must contain variables as noted in the comments for V0518F3P.
+ *
+ * If an enrollee has N diagnoses, s/he will have N records in the DIAG dataset. If an
+ *  enrollee has no diagnoses, s/he will have zero records in the DIAG dataset.
+ *
+ * If an enrollee has N NDCs, s/he will have N records in the NDC dataset. If an
+ *  enrollee has no NDCs, s/he will have zero records in the NDC dataset.
+ *
+ * If an enrollee has N HCPCS, s/he will have N records in the HCPCS dataset. If an
+ *  enrollee has no HCPCS, s/he will have zero records in the HCPCS dataset.
+ *
+ * User-provided parameters:
+ *  INP      - SAS input PERSON SAS dataset
+ *  IND      - SAS input DIAGnosis SAS dataset
+ *  INN      - SAS input NDC SAS dataset
+ *  INH      - SAS input HCPCS SAS dataset
+ *  OUTDATA  - SAS output SAS dataset
+ *  IDVAR    - name of enrollee ID variable (e.g., Medicare HICNO)
+ *  KEEPVAR  - variables in output dataset in addition to &IDVAR
+ *  CCFMT0Y1 - pointer to SAS formats that crosswalk ICD10s to HHS CCs for 2018 fiscal year
+ *  CCFMT0Y2 - pointer to SAS formats that crosswalk ICD10s to HHS CCs for 2019 fiscal year
+ *  NDCFMTN  - pointer to SAS formats that crosswalk NDCs to RXCs
+ *  NDCFMTH  - pointer to SAS formats that crosswalk HCPCS to RXCs
+ *  AGEFMT0  - pointer to SAS formats that crosswalk ICD10s to acceptable 
+ *             age range in case age-related edits are to be performed
+ *  SEXFMT0  - pointer to SAS format that crosswalks ICD10s to acceptable 
+ *             sex in case sex-related edits are to be performed
+ *
+ * Internal parameters (pointers to external macros):
+ *  AGESEXMAC - external macro name: creates age/sex variables
+ *  I0EMACRO  - external macro name: performs ICD10 diagnosis edits
+ *  LABELMAC  - external macro name: assigns labels to HHS HCCs and RXCs
+ *  HIERMAC   - external macro name: applies HHS HCC hierarchy rules
+ *  SCOREMAC  - external macro name: calculates score variables
+ *
+ * External macros for this release:
+ *  AGESEXV6    - (named in AGESEXMAC) creates age/sex variables
+ *  I0V05ED2    - (named in I0EMACRO ) performs ICD10 diagnosis edits
+ *  V05128L1    - (named in LABELMAC ) assigns labels to HHS HCCs and RXCs
+ *  V05128H1    - (named in HIERMAC  ) applies HHS HCC hierarchy rules
+ *  SCOREV4     - (named in SCOREMAC ) calculates score variables
+ *
+ **********************************************************************;
+
+**===========================================================================**;
+** include external macros                                                   **;
+**===========================================================================**;
+
+ ** included files are assumed to have upper case filenames, and extension **;
+ ** .SAS to accommodate all computing platforms, e.g., V05128L1.SAS        **;
+
+ ** creates age/sex variables **;
+ %if "&AGESEXMAC" ne "" %then %do;
+  %inc IN0("&AGESEXMAC..SAS") / source2;
+ %end;
+
+ ** performs ICD10 diagnosis edits **;
+ %if "&I0EMACRO" ne "" %then %do;
+  %inc IN0("&I0EMACRO..SAS") / source2;
+ %end;
+
+ ** assigns HHS HCC labels **;
+ %if "&LABELMAC" ne "" %then %do;
+  %inc IN0("&LABELMAC..SAS") / source2;
+ %end;
+
+ ** applies hierarchy rules **;
+ %if "&HIERMAC" ne "" %then %do;
+  %inc IN0("&HIERMAC..SAS") / source2;
+ %end;
+
+ ** calculates score variables **;
+ %if "&SCOREMAC" ne "" %then %do;
+  %inc IN0("&SCOREMAC..SAS") / source2;
+ %end;
+
+**==========================================================================================**;
+** AGESEXV6 goes here when testing macros inline;
+**==========================================================================================**;
+
+**==========================================================================================**;
+** I0V05ED2 goes here when testing macros inline;
+**==========================================================================================**;
+
+**==========================================================================================**;
+** V05128L1 goes here when testing macros inline;
+**==========================================================================================**;
+
+**==========================================================================================**;
+** V05128H1 goes here when testing macros inline;
+**==========================================================================================**;
+
+**==========================================================================================**;
+** SCOREV4 goes here when testing macros inline;
+**==========================================================================================**;
+
+**===========================================================================**;
+** define internal macro variables, formats, macros                          **;
+**===========================================================================**;
+
+**===========================================================================**;
+** internal macro variables                                                  **;
+**===========================================================================**;
+** largest number used in HHS HCCs naming, for sizing arrays, = payment +    **;
+** non-payment HCCs                                                          **;
+%let N_CC=266;
+
+**===========================================================================**;
+** internal formats                                                          **;
+**===========================================================================**;
+
+**===========================================================================**;
+** if enrollee has any of these ICD10 diags and certain HHS_HCCs, it might   **;
+** indicate a bundled claim -- infant diagnoses                              **;
+** uses format $BY&yy2.I from the format library                             **;
+
+**===========================================================================**;
+** if enrollee has any of these ICD10 diags and certain HHS_HCCs, it might   **;
+** indicate a bundled claim -- mother diagnoses                              **;
+** uses format $BY&yy2.M from the format library                             **;
+
+**===========================================================================**;
+** internal macros                                                           **;
+**===========================================================================**;
+
+**===========================================================================**;
+** age-sex variables list (32)                                               **;
+%macro AGE_SEX_LIST;
+MAGE_LAST_0_0   MAGE_LAST_1_1   MAGE_LAST_2_4   MAGE_LAST_5_9   MAGE_LAST_10_14
+MAGE_LAST_15_20 MAGE_LAST_21_24 MAGE_LAST_25_29 MAGE_LAST_30_34 MAGE_LAST_35_39
+MAGE_LAST_40_44 MAGE_LAST_45_49 MAGE_LAST_50_54 MAGE_LAST_55_59 MAGE_LAST_60_GT
+FAGE_LAST_0_0   FAGE_LAST_1_1   FAGE_LAST_2_4   FAGE_LAST_5_9   FAGE_LAST_10_14
+FAGE_LAST_15_20 FAGE_LAST_21_24 FAGE_LAST_25_29 FAGE_LAST_30_34 FAGE_LAST_35_39
+FAGE_LAST_40_44 FAGE_LAST_45_49 FAGE_LAST_50_54 FAGE_LAST_55_59 FAGE_LAST_60_GT
+Age0_Male 
+Age1_Male
+%mend AGE_SEX_LIST;
+
+**===========================================================================**;
+** HHS HCCs, payment model list (128)                                        **;
+%macro HHS_HCC_PM_LIST;
+HHS_HCC001 HHS_HCC002 HHS_HCC003 HHS_HCC004 HHS_HCC006 HHS_HCC008 HHS_HCC009
+HHS_HCC010 HHS_HCC011 HHS_HCC012 HHS_HCC013 HHS_HCC018 HHS_HCC019 HHS_HCC020
+HHS_HCC021 HHS_HCC023 HHS_HCC026 HHS_HCC027 HHS_HCC028 HHS_HCC029 HHS_HCC030
+HHS_HCC034 HHS_HCC035 HHS_HCC036 HHS_HCC037_1  HHS_HCC037_2 HHS_HCC038 
+HHS_HCC041 HHS_HCC042 HHS_HCC045 HHS_HCC046 HHS_HCC047 HHS_HCC048 HHS_HCC054 
+HHS_HCC055 HHS_HCC056 HHS_HCC057 HHS_HCC061 HHS_HCC062 HHS_HCC063 HHS_HCC064 
+HHS_HCC066 HHS_HCC067 HHS_HCC068 HHS_HCC069 HHS_HCC070 HHS_HCC071 HHS_HCC073 
+HHS_HCC074 HHS_HCC075 HHS_HCC081 HHS_HCC082 HHS_HCC087 HHS_HCC088 HHS_HCC089 
+HHS_HCC090 HHS_HCC094 HHS_HCC096 HHS_HCC097 HHS_HCC102 HHS_HCC103 HHS_HCC106 
+HHS_HCC107 HHS_HCC108 HHS_HCC109 HHS_HCC110 HHS_HCC111 HHS_HCC112 HHS_HCC113 
+HHS_HCC114 HHS_HCC115 HHS_HCC117 HHS_HCC118 HHS_HCC119 HHS_HCC120 HHS_HCC121 
+HHS_HCC122 HHS_HCC125 HHS_HCC126 HHS_HCC127 HHS_HCC128 HHS_HCC129 HHS_HCC130 
+HHS_HCC131 HHS_HCC132 HHS_HCC135 HHS_HCC137 HHS_HCC138 HHS_HCC139 HHS_HCC142 
+HHS_HCC145 HHS_HCC146 HHS_HCC149 HHS_HCC150 HHS_HCC151 HHS_HCC153 HHS_HCC154 
+HHS_HCC156 HHS_HCC158 HHS_HCC159 HHS_HCC160 HHS_HCC161 HHS_HCC162 HHS_HCC163 
+HHS_HCC183 HHS_HCC184 HHS_HCC187 HHS_HCC188 HHS_HCC203 HHS_HCC204 HHS_HCC205 
+HHS_HCC207 HHS_HCC208 HHS_HCC209 HHS_HCC217 HHS_HCC226 HHS_HCC227 HHS_HCC242 
+HHS_HCC243 HHS_HCC244 HHS_HCC245 HHS_HCC246 HHS_HCC247 HHS_HCC248 HHS_HCC249 
+HHS_HCC251 HHS_HCC253 HHS_HCC254
+%mend HHS_HCC_PM_LIST;
+
+**===========================================================================**;
+** HCCs, payment model list, note numbering difference vs. HHS HCCs (128)    **;
+%macro HCC_PM_LIST;
+HCC1   HCC2   HCC3   HCC4   HCC6   HCC8   HCC9   HCC10  HCC11  HCC12
+HCC13  HCC18  HCC19  HCC20  HCC21  HCC23  HCC26  HCC27  HCC28  HCC29
+HCC30  HCC34  HCC35  HCC36  HCC37_1 HCC37_2  HCC38  HCC41  HCC42  HCC45  HCC46
+HCC47  HCC48  HCC54  HCC55  HCC56  HCC57  HCC61  HCC62  HCC63  HCC64
+HCC66  HCC67  HCC68  HCC69  HCC70  HCC71  HCC73  HCC74  HCC75  HCC81
+HCC82  HCC87  HCC88  HCC89  HCC90  HCC94  HCC96  HCC97  HCC102 HCC103
+HCC106 HCC107 HCC108 HCC109 HCC110 HCC111 HCC112 HCC113 HCC114 HCC115
+HCC117 HCC118 HCC119 HCC120 HCC121 HCC122 HCC125 HCC126 HCC127 HCC128
+HCC129 HCC130 HCC131 HCC132 HCC135 HCC137 HCC138 HCC139 HCC142 HCC145
+HCC146 HCC149 HCC150 HCC151 HCC153 HCC154 HCC156 HCC158 HCC159 HCC160
+HCC161 HCC162 HCC163 HCC183 HCC184 HCC187 HCC188 HCC203 HCC204 HCC205
+HCC207 HCC208 HCC209 HCC217 HCC226 HCC227 HCC242 HCC243 HCC244 HCC245
+HCC246 HCC247 HCC248 HCC249 HCC251 HCC253 HCC254
+%mend HCC_PM_LIST;
+
+**===========================================================================**;
+** HHS CCs, payment model list (128)                                         **;
+%macro HHS_CC_PM_LIST;
+HHS_CC001 HHS_CC002 HHS_CC003 HHS_CC004 HHS_CC006 HHS_CC008 HHS_CC009
+HHS_CC010 HHS_CC011 HHS_CC012 HHS_CC013 HHS_CC018 HHS_CC019 HHS_CC020
+HHS_CC021 HHS_CC023 HHS_CC026 HHS_CC027 HHS_CC028 HHS_CC029 HHS_CC030
+HHS_CC034 HHS_CC035 HHS_CC036 HHS_CC037_1 HHS_CC037_2 HHS_CC038 
+HHS_CC041 HHS_CC042 HHS_CC045 HHS_CC046 HHS_CC047 HHS_CC048 HHS_CC054 
+HHS_CC055 HHS_CC056 HHS_CC057 HHS_CC061 HHS_CC062 HHS_CC063 HHS_CC064 
+HHS_CC066 HHS_CC067 HHS_CC068 HHS_CC069 HHS_CC070 HHS_CC071 HHS_CC073 
+HHS_CC074 HHS_CC075 HHS_CC081 HHS_CC082 HHS_CC087 HHS_CC088 HHS_CC089 
+HHS_CC090 HHS_CC094 HHS_CC096 HHS_CC097 HHS_CC102 HHS_CC103 HHS_CC106 
+HHS_CC107 HHS_CC108 HHS_CC109 HHS_CC110 HHS_CC111 HHS_CC112 HHS_CC113 
+HHS_CC114 HHS_CC115 HHS_CC117 HHS_CC118 HHS_CC119 HHS_CC120 HHS_CC121 
+HHS_CC122 HHS_CC125 HHS_CC126 HHS_CC127 HHS_CC128 HHS_CC129 HHS_CC130 
+HHS_CC131 HHS_CC132 HHS_CC135 HHS_CC137 HHS_CC138 HHS_CC139 HHS_CC142 
+HHS_CC145 HHS_CC146 HHS_CC149 HHS_CC150 HHS_CC151 HHS_CC153 HHS_CC154 
+HHS_CC156 HHS_CC158 HHS_CC159 HHS_CC160 HHS_CC161 HHS_CC162 HHS_CC163 
+HHS_CC183 HHS_CC184 HHS_CC187 HHS_CC188 HHS_CC203 HHS_CC204 HHS_CC205 
+HHS_CC207 HHS_CC208 HHS_CC209 HHS_CC217 HHS_CC226 HHS_CC227 HHS_CC242 
+HHS_CC243 HHS_CC244 HHS_CC245 HHS_CC246 HHS_CC247 HHS_CC248 HHS_CC249 
+HHS_CC251 HHS_CC253 HHS_CC254
+%mend HHS_CC_PM_LIST;
+
+**===========================================================================**;
+** CCs, payment model list, note numbering difference vs. HHS CCs (128)      **;
+%macro CC_PM_LIST;
+CC1   CC2   CC3   CC4   CC6   CC8   CC9   CC10  CC11  CC12
+CC13  CC18  CC19  CC20  CC21  CC23  CC26  CC27  CC28  CC29
+CC30  CC34  CC35  CC36  CC37_1 CC37_2  CC38  CC41  CC42  CC45  CC46
+CC47  CC48  CC54  CC55  CC56  CC57  CC61  CC62  CC63  CC64
+CC66  CC67  CC68  CC69  CC70  CC71  CC73  CC74  CC75  CC81
+CC82  CC87  CC88  CC89  CC90  CC94  CC96  CC97  CC102 CC103
+CC106 CC107 CC108 CC109 CC110 CC111 CC112 CC113 CC114 CC115
+CC117 CC118 CC119 CC120 CC121 CC122 CC125 CC126 CC127 CC128
+CC129 CC130 CC131 CC132 CC135 CC137 CC138 CC139 CC142 CC145
+CC146 CC149 CC150 CC151 CC153 CC154 CC156 CC158 CC159 CC160
+CC161 CC162 CC163 CC183 CC184 CC187 CC188 CC203 CC204 CC205
+CC207 CC208 CC209 CC217 CC226 CC227 CC242 CC243 CC244 CC245
+CC246 CC247 CC248 CC249 CC251 CC253 CC254
+%mend CC_PM_LIST;
+
+**===========================================================================**;
+** HCCs, all, note numbering difference vs. HHS HCCs (267)                   **;
+%macro HCC_FULL_LIST;
+HCC1-HCC36 HCC37_1 HCC37_2 HCC38-HCC&N_CC
+%mend HCC_FULL_LIST;
+
+**===========================================================================**;
+** CCs, all, note numbering difference vs. HHS CCs (267)                     **;
+%macro CC_FULL_LIST;
+CC1-CC36 CC37_1 CC37_2 CC38-CC&N_CC
+%mend CC_FULL_LIST;
+
+**===========================================================================**;
+** RXCs, all, full list (12)                                                 **;
+%macro RXC_FULL_LIST;
+RXC_01 RXC_02 RXC_03 RXC_04 RXC_05 RXC_06 RXC_07 RXC_08 RXC_09 RXC_10 RXC_11 RXC_12 
+%mend RXC_FULL_LIST;
+
+**===========================================================================**;
+** RXCs, payment model, Model list (10)                                                **;
+%macro RXC_MODEL_LIST;
+RXC_01 RXC_02 RXC_03 RXC_04 RXC_05 RXC_06 RXC_07 RXC_08 RXC_09 RXC_10 
+%mend RXC_MODEL_LIST;
+
+**===========================================================================**;
+** RXCs, all, Intercations list (15)                                                **;
+%macro RXC_INT_LIST;
+RXC_01_x_HCC001
+RXC_02_x_HCC037_1_036_035_034 
+RXC_03_x_HCC142
+RXC_04_x_HCC184_183_187_188
+RXC_05_x_HCC048_041
+RXC_06_x_HCC018_019_020_021
+RXC_07_x_HCC018_019_020_021
+RXC_08_x_HCC118
+RXC_09_x_HCC056_057_and_048_041
+RXC_09_x_HCC056
+RXC_09_x_HCC057
+RXC_09_x_HCC048_041
+RXC_10_x_HCC159_158
+RXC_11_x_HCC036_035_034
+RXC_12_x_HCC130_129_128 
+%mend RXC_INT_LIST;
+
+**===========================================================================**;
+** ADULT model HCC groups list, note 02A, no 05 (17)                         **;
+%macro ADULT_GROUPS_LIST;
+G01 G02A G03 G04 G06 G07 G08 G09 G10 G11 G12 G13 G14 G15 G16 G17 G18
+%mend ADULT_GROUPS_LIST;
+
+**===========================================================================**;
+** CHILD model HCC groups list, note no 05 (17)                              **;
+%macro CHILD_GROUPS_LIST;
+G01 G02  G03 G04 G06 G07 G08 G09 G10 G11 G12 G13 G14 G15 G16 G17 G18
+%mend CHILD_GROUPS_LIST;
+
+**===========================================================================**;
+** INFANT model HCC groups list, placeholder, NONE at this time (0)          **;
+%macro INFANT_GROUPS_LIST;
+%mend INFANT_GROUPS_LIST;
+
+**===========================================================================**;
+** ADULT variables list, 128 + 18 + 17 + 2 + 11 + 10 + 15 = (201)                           **;
+%macro ADULT_VARIABLES_LIST;
+%HHS_HCC_PM_LIST
+FAGE_LAST_21_24 FAGE_LAST_25_29 FAGE_LAST_30_34 FAGE_LAST_35_39
+FAGE_LAST_40_44 FAGE_LAST_45_49 FAGE_LAST_50_54 FAGE_LAST_55_59
+FAGE_LAST_60_GT
+MAGE_LAST_21_24 MAGE_LAST_25_29 MAGE_LAST_30_34 MAGE_LAST_35_39
+MAGE_LAST_40_44 MAGE_LAST_45_49 MAGE_LAST_50_54 MAGE_LAST_55_59
+MAGE_LAST_60_GT
+%ADULT_GROUPS_LIST
+INT_GROUP_H
+INT_GROUP_M
+ED_1 ED_2 ED_3 ED_4 ED_5 ED_6 ED_7 ED_8 ED_9 ED_10 ED_11
+%RXC_MODEL_LIST
+%RXC_INT_LIST
+%mend ADULT_VARIABLES_LIST;
+
+**===========================================================================**;
+** CHILD variables list, 128 + 8 + 17 = (153)                                **;
+%macro CHILD_VARIABLES_LIST;
+%HHS_HCC_PM_LIST
+FAGE_LAST_2_4 FAGE_LAST_5_9 FAGE_LAST_10_14 FAGE_LAST_15_20
+MAGE_LAST_2_4 MAGE_LAST_5_9 MAGE_LAST_10_14 MAGE_LAST_15_20
+%CHILD_GROUPS_LIST
+%mend CHILD_VARIABLES_LIST;
+
+**===========================================================================**;
+** INFANT vars list (27)                                                     **;
+%macro INFANT_VARIABLES_LIST;
+AGE0_MALE AGE1_MALE
+%SEV_MAT_INTERACTIONS_LIST
+%mend INFANT_VARIABLES_LIST;
+
+**===========================================================================**;
+** ADULT coeff list, parameter is prefix, e.g., AP for adult platinum  (201) **;
+%macro ADULT_COEFFICIENTS_LIST(P);
+&P.HHS_HCC001 &P.HHS_HCC002 &P.HHS_HCC003 &P.HHS_HCC004 &P.HHS_HCC006
+&P.HHS_HCC008 &P.HHS_HCC009 &P.HHS_HCC010 &P.HHS_HCC011 &P.HHS_HCC012
+&P.HHS_HCC013 &P.HHS_HCC018 &P.HHS_HCC019 &P.HHS_HCC020 &P.HHS_HCC021
+&P.HHS_HCC023 &P.HHS_HCC026 &P.HHS_HCC027 &P.HHS_HCC028 &P.HHS_HCC029
+&P.HHS_HCC030 &P.HHS_HCC034 &P.HHS_HCC035 &P.HHS_HCC036 &P.HHS_HCC037_1
+&P.HHS_HCC037_2 &P.HHS_HCC038 &P.HHS_HCC041 &P.HHS_HCC042 &P.HHS_HCC045
+&P.HHS_HCC046 &P.HHS_HCC047 &P.HHS_HCC048 &P.HHS_HCC054 &P.HHS_HCC055 
+&P.HHS_HCC056 &P.HHS_HCC057 &P.HHS_HCC061 &P.HHS_HCC062 &P.HHS_HCC063 
+&P.HHS_HCC064 &P.HHS_HCC066 &P.HHS_HCC067 &P.HHS_HCC068 &P.HHS_HCC069 
+&P.HHS_HCC070 &P.HHS_HCC071 &P.HHS_HCC073 &P.HHS_HCC074 &P.HHS_HCC075 
+&P.HHS_HCC081 &P.HHS_HCC082 &P.HHS_HCC087 &P.HHS_HCC088 &P.HHS_HCC089 
+&P.HHS_HCC090 &P.HHS_HCC094 &P.HHS_HCC096 &P.HHS_HCC097 &P.HHS_HCC102 
+&P.HHS_HCC103 &P.HHS_HCC106 &P.HHS_HCC107 &P.HHS_HCC108 &P.HHS_HCC109 
+&P.HHS_HCC110 &P.HHS_HCC111 &P.HHS_HCC112 &P.HHS_HCC113 &P.HHS_HCC114 
+&P.HHS_HCC115 &P.HHS_HCC117 &P.HHS_HCC118 &P.HHS_HCC119 &P.HHS_HCC120 
+&P.HHS_HCC121 &P.HHS_HCC122 &P.HHS_HCC125 &P.HHS_HCC126 &P.HHS_HCC127 
+&P.HHS_HCC128 &P.HHS_HCC129 &P.HHS_HCC130 &P.HHS_HCC131 &P.HHS_HCC132 
+&P.HHS_HCC135 &P.HHS_HCC137 &P.HHS_HCC138 &P.HHS_HCC139 &P.HHS_HCC142 
+&P.HHS_HCC145 &P.HHS_HCC146 &P.HHS_HCC149 &P.HHS_HCC150 &P.HHS_HCC151 
+&P.HHS_HCC153 &P.HHS_HCC154 &P.HHS_HCC156 &P.HHS_HCC158 &P.HHS_HCC159 
+&P.HHS_HCC160 &P.HHS_HCC161 &P.HHS_HCC162 &P.HHS_HCC163 &P.HHS_HCC183 
+&P.HHS_HCC184 &P.HHS_HCC187 &P.HHS_HCC188 &P.HHS_HCC203 &P.HHS_HCC204 
+&P.HHS_HCC205 &P.HHS_HCC207 &P.HHS_HCC208 &P.HHS_HCC209 &P.HHS_HCC217 
+&P.HHS_HCC226 &P.HHS_HCC227 &P.HHS_HCC242 &P.HHS_HCC243 &P.HHS_HCC244 
+&P.HHS_HCC245 &P.HHS_HCC246 &P.HHS_HCC247 &P.HHS_HCC248 &P.HHS_HCC249 
+&P.HHS_HCC251 &P.HHS_HCC253 &P.HHS_HCC254
+&P.FAGE_LAST_21_24 &P.FAGE_LAST_25_29 &P.FAGE_LAST_30_34 &P.FAGE_LAST_35_39
+&P.FAGE_LAST_40_44 &P.FAGE_LAST_45_49 &P.FAGE_LAST_50_54 &P.FAGE_LAST_55_59
+&P.FAGE_LAST_60_GT
+&P.MAGE_LAST_21_24 &P.MAGE_LAST_25_29 &P.MAGE_LAST_30_34 &P.MAGE_LAST_35_39
+&P.MAGE_LAST_40_44 &P.MAGE_LAST_45_49 &P.MAGE_LAST_50_54 &P.MAGE_LAST_55_59
+&P.MAGE_LAST_60_GT
+&P.G01 &P.G02A &P.G03 &P.G04 &P.G06 &P.G07 &P.G08 &P.G09 &P.G10 &P.G11 &P.G12
+&P.G13 &P.G14  &P.G15 &P.G16 &P.G17 &P.G18
+&P.INT_GROUP_H &P.INT_GROUP_M
+&P.ED_1 &P.ED_2 &P.ED_3 &P.ED_4 &P.ED_5 &P.ED_6 &P.ED_7 &P.ED_8 &P.ED_9
+&P.ED_10 &P.ED_11
+&P.RXC_01 &P.RXC_02 &P.RXC_03 &P.RXC_04 &P.RXC_05 &P.RXC_06 &P.RXC_07
+&P.RXC_08 &P.RXC_09 &P.RXC_10
+&P.RXC_01_X_HCC001                &P.RXC_02_X_HCC037_1_036_035_034 
+&P.RXC_03_X_HCC142                &P.RXC_04_X_HCC184_183_187_188 
+&P.RXC_05_X_HCC048_041            &P.RXC_06_X_HCC018_019_020_021
+&P.RXC_07_X_HCC018_019_020_021    &P.RXC_08_X_HCC118 
+&P.C_09_X_HCC056_057_AND_048_041  &P.RXC_09_X_HCC056 
+&P.RXC_09_X_HCC057                &P.RXC_09_X_HCC048_041 
+&P.RXC_10_X_HCC159_158            &P.RXC_11_X_HCC036_035_034 
+&P.RXC_12_X_HCC130_129_128
+%mend ADULT_COEFFICIENTS_LIST;
+
+**===========================================================================**;
+** CHILD coeff list, parameter is prefix, e.g., CG for child gold (153)      **;
+%macro CHILD_COEFFICIENTS_LIST(P);
+&P.HHS_HCC001 &P.HHS_HCC002 &P.HHS_HCC003 &P.HHS_HCC004 &P.HHS_HCC006
+&P.HHS_HCC008 &P.HHS_HCC009 &P.HHS_HCC010 &P.HHS_HCC011 &P.HHS_HCC012
+&P.HHS_HCC013 &P.HHS_HCC018 &P.HHS_HCC019 &P.HHS_HCC020 &P.HHS_HCC021
+&P.HHS_HCC023 &P.HHS_HCC026 &P.HHS_HCC027 &P.HHS_HCC028 &P.HHS_HCC029
+&P.HHS_HCC030 &P.HHS_HCC034 &P.HHS_HCC035 &P.HHS_HCC036 &P.HHS_HCC037_1
+&P.HHS_HCC037_2 &P.HHS_HCC038 &P.HHS_HCC041 &P.HHS_HCC042 &P.HHS_HCC045
+&P.HHS_HCC046 &P.HHS_HCC047 &P.HHS_HCC048 &P.HHS_HCC054 &P.HHS_HCC055 
+&P.HHS_HCC056 &P.HHS_HCC057 &P.HHS_HCC061 &P.HHS_HCC062 &P.HHS_HCC063 
+&P.HHS_HCC064 &P.HHS_HCC066 &P.HHS_HCC067 &P.HHS_HCC068 &P.HHS_HCC069 
+&P.HHS_HCC070 &P.HHS_HCC071 &P.HHS_HCC073 &P.HHS_HCC074 &P.HHS_HCC075 
+&P.HHS_HCC081 &P.HHS_HCC082 &P.HHS_HCC087 &P.HHS_HCC088 &P.HHS_HCC089 
+&P.HHS_HCC090 &P.HHS_HCC094 &P.HHS_HCC096 &P.HHS_HCC097 &P.HHS_HCC102 
+&P.HHS_HCC103 &P.HHS_HCC106 &P.HHS_HCC107 &P.HHS_HCC108 &P.HHS_HCC109 
+&P.HHS_HCC110 &P.HHS_HCC111 &P.HHS_HCC112 &P.HHS_HCC113 &P.HHS_HCC114 
+&P.HHS_HCC115 &P.HHS_HCC117 &P.HHS_HCC118 &P.HHS_HCC119 &P.HHS_HCC120 
+&P.HHS_HCC121 &P.HHS_HCC122 &P.HHS_HCC125 &P.HHS_HCC126 &P.HHS_HCC127 
+&P.HHS_HCC128 &P.HHS_HCC129 &P.HHS_HCC130 &P.HHS_HCC131 &P.HHS_HCC132 
+&P.HHS_HCC135 &P.HHS_HCC137 &P.HHS_HCC138 &P.HHS_HCC139 &P.HHS_HCC142 
+&P.HHS_HCC145 &P.HHS_HCC146 &P.HHS_HCC149 &P.HHS_HCC150 &P.HHS_HCC151 
+&P.HHS_HCC153 &P.HHS_HCC154 &P.HHS_HCC156 &P.HHS_HCC158 &P.HHS_HCC159 
+&P.HHS_HCC160 &P.HHS_HCC161 &P.HHS_HCC162 &P.HHS_HCC163 &P.HHS_HCC183 
+&P.HHS_HCC184 &P.HHS_HCC187 &P.HHS_HCC188 &P.HHS_HCC203 &P.HHS_HCC204 
+&P.HHS_HCC205 &P.HHS_HCC207 &P.HHS_HCC208 &P.HHS_HCC209 &P.HHS_HCC217 
+&P.HHS_HCC226 &P.HHS_HCC227 &P.HHS_HCC242 &P.HHS_HCC243 &P.HHS_HCC244 
+&P.HHS_HCC245 &P.HHS_HCC246 &P.HHS_HCC247 &P.HHS_HCC248 &P.HHS_HCC249 
+&P.HHS_HCC251 &P.HHS_HCC253 &P.HHS_HCC254
+&P.FAGE_LAST_2_4 &P.FAGE_LAST_5_9 &P.FAGE_LAST_10_14 &P.FAGE_LAST_15_20 
+&P.MAGE_LAST_2_4 &P.MAGE_LAST_5_9 &P.MAGE_LAST_10_14 &P.MAGE_LAST_15_20 
+&P.G01 &P.G02 &P.G03 &P.G04 &P.G06 &P.G07 &P.G08 &P.G09 &P.G10 &P.G11 
+&P.G12 &P.G13 &P.G14 &P.G15 &P.G16 &P.G17 &P.G18 
+%mend CHILD_COEFFICIENTS_LIST;
+
+**===========================================================================**;
+** INFANT coeff list, parameter is prefix, e.g., IS for infant silver (27)   **;
+** some are abbreviated to comply with variable name length restrictions     **;
+** e.g., IBPREMATURE_MULTIPLES_X_SEVERITY1 is longer than 32                 **;
+%macro INFANT_COEFFICIENTS_LIST(P);
+&P.AGE0_MALE                      &P.AGE1_MALE 
+&P.AGE1_X_SEVERITY1               &P.AGE1_X_SEVERITY2 
+&P.AGE1_X_SEVERITY3               &P.AGE1_X_SEVERITY4 
+&P.AGE1_X_SEVERITY5 
+&P.EMATURE_MULTIPLES_X_SEVERITY1  &P.EMATURE_MULTIPLES_X_SEVERITY2 
+&P.EMATURE_MULTIPLES_X_SEVERITY3  &P.EMATURE_MULTIPLES_X_SEVERITY4 
+&P.EMATURE_MULTIPLES_X_SEVERITY5 
+&P.EXTREMELY_IMMATURE_X_SEVERITY1 &P.EXTREMELY_IMMATURE_X_SEVERITY2 
+&P.EXTREMELY_IMMATURE_X_SEVERITY3 &P.EXTREMELY_IMMATURE_X_SEVERITY4 
+&P.EXTREMELY_IMMATURE_X_SEVERITY5 
+&P.IMMATURE_X_SEVERITY1           &P.IMMATURE_X_SEVERITY2 
+&P.IMMATURE_X_SEVERITY3           &P.IMMATURE_X_SEVERITY4 
+&P.IMMATURE_X_SEVERITY5 
+&P.TERM_X_SEVERITY1               &P.TERM_X_SEVERITY2 
+&P.TERM_X_SEVERITY3               &P.TERM_X_SEVERITY4 
+&P.TERM_X_SEVERITY5 
+%mend INFANT_COEFFICIENTS_LIST;
+
+**===========================================================================**;
+** ADULT severe illness list (8)                                             **;
+%macro SEVERE_V3_LIST;
+HHS_HCC002
+HHS_HCC042
+HHS_HCC120
+HHS_HCC122
+HHS_HCC125
+HHS_HCC126
+HHS_HCC127
+HHS_HCC156
+%mend SEVERE_V3_LIST;
+
+**===========================================================================**;
+** ADULT severe illness interaction H list (9)                               **;
+%macro INT_GROUP_H_LIST;
+SEVERE_V3_x_HHS_HCC006 
+SEVERE_V3_x_HHS_HCC008 
+SEVERE_V3_x_HHS_HCC009
+SEVERE_V3_x_HHS_HCC010 
+SEVERE_V3_x_HHS_HCC115 
+SEVERE_V3_x_HHS_HCC135 
+SEVERE_V3_x_HHS_HCC145 
+SEVERE_V3_x_G06 
+SEVERE_V3_x_G08 
+%mend INT_GROUP_H_LIST;
+
+**===========================================================================**;
+** ADULT severe illness interaction M list (7)                               **;
+%macro INT_GROUP_M_LIST;
+SEVERE_V3_x_HHS_HCC035 
+SEVERE_V3_x_HHS_HCC038 
+SEVERE_V3_x_HHS_HCC153 
+SEVERE_V3_x_HHS_HCC154 
+SEVERE_V3_x_HHS_HCC163 
+SEVERE_V3_x_HHS_HCC253 
+SEVERE_V3_x_G03 
+%mend INT_GROUP_M_LIST;
+
+**===========================================================================**;
+** ADULT scores list (12)                                                    **;
+%macro ADULT_SCORES_LIST;
+SCORE_ADULT_PLATINUM 
+SCORE_ADULT_GOLD 
+SCORE_ADULT_SILVER 
+SCORE_ADULT_BRONZE 
+SCORE_ADULT_CATASTROPHIC 
+CSR_ADJ_SCR_ADULT_PLATINUM 
+CSR_ADJ_SCR_ADULT_GOLD 
+CSR_ADJ_SCR_ADULT_SILVER 
+CSR_ADJ_SCR_ADULT_BRONZE 
+CSR_ADJ_SCR_ADULT_CATASTROPHIC
+SCORE_ADULT
+CSR_ADJ_SCR_ADULT
+%mend ADULT_SCORES_LIST;
+
+**===========================================================================**;
+** CHILD scores list (12)                                                    **;
+%macro CHILD_SCORES_LIST;
+SCORE_CHILD_PLATINUM 
+SCORE_CHILD_GOLD 
+SCORE_CHILD_SILVER 
+SCORE_CHILD_BRONZE 
+SCORE_CHILD_CATASTROPHIC 
+CSR_ADJ_SCR_CHILD_PLATINUM 
+CSR_ADJ_SCR_CHILD_GOLD 
+CSR_ADJ_SCR_CHILD_SILVER 
+CSR_ADJ_SCR_CHILD_BRONZE 
+CSR_ADJ_SCR_CHILD_CATASTROPHIC
+SCORE_CHILD
+CSR_ADJ_SCR_CHILD
+%mend CHILD_SCORES_LIST;
+
+**===========================================================================**;
+** INFANT severity list (5)                                                  **;
+%macro IHCC_SEVERITY_LIST;
+IHCC_Severity5
+IHCC_Severity4
+IHCC_Severity3
+IHCC_Severity2
+IHCC_Severity1
+%mend IHCC_SEVERITY_LIST;
+
+**===========================================================================**;
+** INFANT maturity list (5)                                                  **;
+%macro IHCC_MATURITY_LIST;
+IHCC_Age1
+IHCC_Extremely_Immature
+IHCC_Immature
+IHCC_Premature_Multiples
+IHCC_Term
+%mend IHCC_MATURITY_LIST;
+
+**===========================================================================**;
+** INFANT severity maturity interactions list (25)                           **;
+%macro SEV_MAT_INTERACTIONS_LIST;
+Age1_x_Severity1 
+Age1_x_Severity2 
+Age1_x_Severity3 
+Age1_x_Severity4 
+Age1_x_Severity5 
+Premature_Multiples_x_Severity1 
+Premature_Multiples_x_Severity2 
+Premature_Multiples_x_Severity3 
+Premature_Multiples_x_Severity4 
+Premature_Multiples_x_Severity5 
+Extremely_Immature_x_Severity1 
+Extremely_Immature_x_Severity2 
+Extremely_Immature_x_Severity3 
+Extremely_Immature_x_Severity4 
+Extremely_Immature_x_Severity5 
+Immature_x_Severity1 
+Immature_x_Severity2 
+Immature_x_Severity3 
+Immature_x_Severity4 
+Immature_x_Severity5 
+Term_x_Severity1 
+Term_x_Severity2 
+Term_x_Severity3 
+Term_x_Severity4 
+Term_x_Severity5 
+%mend SEV_MAT_INTERACTIONS_LIST;
+
+**===========================================================================**;
+** INFANT scores list (12)                                                   **;
+%macro INFANT_SCORES_LIST;
+SCORE_INFANT_PLATINUM 
+SCORE_INFANT_GOLD 
+SCORE_INFANT_SILVER 
+SCORE_INFANT_BRONZE 
+SCORE_INFANT_CATASTROPHIC 
+CSR_ADJ_SCR_INFANT_PLATINUM 
+CSR_ADJ_SCR_INFANT_GOLD 
+CSR_ADJ_SCR_INFANT_SILVER 
+CSR_ADJ_SCR_INFANT_BRONZE 
+CSR_ADJ_SCR_INFANT_CATASTROPHIC
+SCORE_INFANT
+CSR_ADJ_SCR_INFANT
+%mend INFANT_SCORES_LIST;
+
+**===========================================================================**;
+** all coefficients list, expands to 370 coeff. x 5 metal = (1850)           **;
+** some are abbreviated to comply with variable name length restrictions     **;
+** e.g., IBPREMATURE_MULTIPLES_X_SEVERITY1 is longer than 32                 **;
+%macro ALL_COEFFICIENTS_LIST;
+APMAGE_LAST_: AGMAGE_LAST_: ASMAGE_LAST_: ABMAGE_LAST_: ACMAGE_LAST_:                     
+APFAGE_LAST_: AGFAGE_LAST_: ASFAGE_LAST_: ABFAGE_LAST_: ACFAGE_LAST_:                     
+APHHS_HCC:    AGHHS_HCC:    ASHHS_HCC:    ABHHS_HCC:    ACHHS_HCC:                        
+APG:          AGG:          ASG:          ABG:          ACG:
+APED:         AGED:         ASED:         ABED:         ACED: 
+APINT_GROUP_: AGINT_GROUP_: ASINT_GROUP_: ABINT_GROUP_: ACINT_GROUP_: 
+APRXC_:       AGRXC_:       ASRXC_:       ABRXC_:       ACRXC_:       
+APC_09:       AGC_09:       ASC_09:       ABC_09:       ACC_09:       
+CPMAGE_LAST_: CGMAGE_LAST_: CSMAGE_LAST_: CBMAGE_LAST_: CCMAGE_LAST_: 
+CPFAGE_LAST_: CGFAGE_LAST_: CSFAGE_LAST_: CBFAGE_LAST_: CCFAGE_LAST_: 
+CPHHS_HCC:    CGHHS_HCC:    CSHHS_HCC:    CBHHS_HCC:    CCHHS_HCC: 
+CPG:          CGG:          CSG:          CBG:          CCG: 
+IPEXTREMELY_IMMATURE_X_SEVERITY:          IGEXTREMELY_IMMATURE_X_SEVERITY:  
+ISEXTREMELY_IMMATURE_X_SEVERITY:          IBEXTREMELY_IMMATURE_X_SEVERITY:  
+ICEXTREMELY_IMMATURE_X_SEVERITY:  
+IPIMMATURE_X_SEVERITY:                    IGIMMATURE_X_SEVERITY:            
+ISIMMATURE_X_SEVERITY:                    IBIMMATURE_X_SEVERITY:            
+ICIMMATURE_X_SEVERITY:            
+IPEMATURE_MULTIPLES_X_SEVERITY:           IGEMATURE_MULTIPLES_X_SEVERITY: 
+ISEMATURE_MULTIPLES_X_SEVERITY:           IBEMATURE_MULTIPLES_X_SEVERITY: 
+ICEMATURE_MULTIPLES_X_SEVERITY: 
+IPTERM_X_SEVERITY:                        IGTERM_X_SEVERITY:                
+ISTERM_X_SEVERITY:                        IBTERM_X_SEVERITY:                
+ICTERM_X_SEVERITY:          
+IPAGE1_X_SEVERITY:                        IGAGE1_X_SEVERITY:                
+ISAGE1_X_SEVERITY:                        IBAGE1_X_SEVERITY:                
+ICAGE1_X_SEVERITY:                
+IPAGE0_MALE   IGAGE0_MALE   ISAGE0_MALE   IBAGE0_MALE   ICAGE0_MALE 
+IPAGE1_MALE   IGAGE1_MALE   ISAGE1_MALE   IBAGE1_MALE   ICAGE1_MALE 
+%mend ALL_COEFFICIENTS_LIST;
+
+**===========================================================================**;
+** generate variables specific to ADULT model                                **;
+%macro GENERATE_ADULT_VARIABLES;
+
+** severe illness indicator **;
+SEVERE_V3=0;
+do i=1 to dim(_SEVERE_V3);
+ if _SEVERE_V3(i)=1 then SEVERE_V3=1;
+end;
+
+** adult HCC groups **;
+do i=1 to dim(_ADULT_GROUPS);
+ _ADULT_GROUPS(i)=0;
+end;
+
+** mandatory for adults **;
+HHS_HCC028 = 0;
+HHS_HCC064 = 0;
+HHS_HCC137 = 0;
+HHS_HCC138 = 0;
+HHS_HCC139 = 0;
+HHS_HCC242 = 0;
+HHS_HCC243 = 0;
+HHS_HCC244 = 0;
+HHS_HCC245 = 0;
+HHS_HCC246 = 0;
+HHS_HCC247 = 0;
+HHS_HCC248 = 0;
+HHS_HCC249 = 0;
+
+** these are not mutex **;
+if HHS_HCC019=1 or HHS_HCC020=1 or HHS_HCC021=1 then do;
+ HHS_HCC019=0;
+ HHS_HCC020=0;
+ HHS_HCC021=0;
+ G01=1;
+end;
+if HHS_HCC026=1 or HHS_HCC027=1 or HHS_HCC029=1 or HHS_HCC030=1 then do;
+ HHS_HCC026=0;
+ HHS_HCC027=0;
+ HHS_HCC029=0;
+ HHS_HCC030=0;
+ G02A=1;
+end;
+if HHS_HCC054=1 or HHS_HCC055=1 then do;
+ HHS_HCC054=0;
+ HHS_HCC055=0;
+ G03=1;
+end;
+if HHS_HCC061=1 or HHS_HCC062=1 then do;
+ HHS_HCC061=0;
+ HHS_HCC062=0;
+ G04=1;
+end;
+if HHS_HCC067=1 or HHS_HCC068=1 then do;
+ HHS_HCC067=0;
+ HHS_HCC068=0;
+ G06=1;
+end;
+if HHS_HCC069=1 or HHS_HCC070=1 or HHS_HCC071=1 then do;
+ HHS_HCC069=0;
+ HHS_HCC070=0;
+ HHS_HCC071=0;
+ G07=1;
+end;
+if HHS_HCC073=1 or HHS_HCC074=1 then do;
+ HHS_HCC073=0;
+ HHS_HCC074=0;
+ G08=1;
+end;
+if HHS_HCC081=1 or HHS_HCC082=1 then do;
+ HHS_HCC081=0;
+ HHS_HCC082=0;
+ G09=1;
+end;
+if HHS_HCC106=1 or HHS_HCC107=1 then do;
+ HHS_HCC106=0;
+ HHS_HCC107=0;
+ G10=1;
+end;
+if HHS_HCC108=1 or HHS_HCC109=1 then do;
+ HHS_HCC108=0;
+ HHS_HCC109=0;
+ G11=1;
+end;
+if HHS_HCC117=1 or HHS_HCC119=1 then do;
+ HHS_HCC117=0;
+ HHS_HCC119=0;
+ G12=1;
+end;
+if HHS_HCC126=1 or HHS_HCC127=1 then do;
+ HHS_HCC126=0;
+ HHS_HCC127=0;
+ G13=1;
+end;
+if HHS_HCC128=1 or HHS_HCC129=1 then do;
+ HHS_HCC128=0;
+ HHS_HCC129=0;
+ G14=1;
+end;
+if HHS_HCC160=1 or HHS_HCC161=1 then do;
+ HHS_HCC160=0;
+ HHS_HCC161=0;
+ G15=1;
+end;
+if HHS_HCC187=1 or HHS_HCC188=1 then do;
+ HHS_HCC187=0;
+ HHS_HCC188=0;
+ G16=1;
+end;
+if HHS_HCC203=1 or HHS_HCC204=1 or HHS_HCC205=1 then do;
+ HHS_HCC203=0;
+ HHS_HCC204=0;
+ HHS_HCC205=0;
+ G17=1;
+end;
+if HHS_HCC207=1 or HHS_HCC208=1 or HHS_HCC209=1 then do;
+ HHS_HCC207=0;
+ HHS_HCC208=0;
+ HHS_HCC209=0;
+ G18=1;
+end;
+
+** severe illness interactions **;
+SEVERE_V3_x_HHS_HCC006  = SEVERE_V3 * HHS_HCC006;
+SEVERE_V3_x_HHS_HCC008  = SEVERE_V3 * HHS_HCC008;
+SEVERE_V3_x_HHS_HCC009  = SEVERE_V3 * HHS_HCC009;
+SEVERE_V3_x_HHS_HCC010  = SEVERE_V3 * HHS_HCC010;
+SEVERE_V3_x_HHS_HCC035  = SEVERE_V3 * HHS_HCC035;
+SEVERE_V3_x_HHS_HCC038  = SEVERE_V3 * HHS_HCC038;
+SEVERE_V3_x_HHS_HCC115  = SEVERE_V3 * HHS_HCC115;
+SEVERE_V3_x_HHS_HCC135  = SEVERE_V3 * HHS_HCC135;
+SEVERE_V3_x_HHS_HCC145  = SEVERE_V3 * HHS_HCC145;
+SEVERE_V3_x_HHS_HCC153  = SEVERE_V3 * HHS_HCC153;
+SEVERE_V3_x_HHS_HCC154  = SEVERE_V3 * HHS_HCC154;
+SEVERE_V3_x_HHS_HCC163  = SEVERE_V3 * HHS_HCC163;
+SEVERE_V3_x_HHS_HCC253  = SEVERE_V3 * HHS_HCC253;
+SEVERE_V3_x_G03         = SEVERE_V3 * G03;
+SEVERE_V3_x_G06         = SEVERE_V3 * G06;
+SEVERE_V3_x_G08         = SEVERE_V3 * G08;
+
+** severe illness interaction groups H and M **;
+INT_GROUP_H=0;
+do i=1 to dim(_INT_GROUP_H);
+ if _INT_GROUP_H(i)=1 then INT_GROUP_H=1;
+end;
+
+INT_GROUP_M=0;
+if INT_GROUP_H=0 then do; 
+ do i=1 to dim(_INT_GROUP_M);
+  if _INT_GROUP_M(i)=1 then INT_GROUP_M=1;
+ end;
+end;
+
+** Enrollment Duration flags **;
+do i = 1 to dim(_ED) ;
+   _ED(i) = 0 ;
+end ;
+
+select;
+ when (ENROLDURATION=1) ED_1=1;
+ when (ENROLDURATION=2) ED_2=1;
+ when (ENROLDURATION=3) ED_3=1;
+ when (ENROLDURATION=4) ED_4=1;
+ when (ENROLDURATION=5) ED_5=1;
+ when (ENROLDURATION=6) ED_6=1;
+ when (ENROLDURATION=7) ED_7=1;
+ when (ENROLDURATION=8) ED_8=1;
+ when (ENROLDURATION=9) ED_9=1;
+ when (ENROLDURATION=10) ED_10=1;
+ when (ENROLDURATION=11) ED_11=1;
+ otherwise ;
+end ;
+
+** RXC interaction flags **;
+do i = 1 to dim(_RXCint) ;
+   _RXCint(i) = 0 ;
+end ;
+
+if RXC_01 = 1 and HCC1 then RXC_01_x_HCC001 = 1 ;
+if RXC_02 = 1 and (HCC37_1 = 1 
+                   or HCC34 = 1
+                   or HCC35 = 1
+                   or HCC36 = 1
+                   ) then RXC_02_x_HCC037_1_036_035_034  = 1 ;
+if RXC_03 = 1 and HCC142 = 1 then RXC_03_x_HCC142 = 1 ;
+if RXC_04 = 1 and (HCC184 = 1 
+                   or HCC183 = 1
+                   or HCC187 = 1
+                   or HCC188 = 1
+                   ) then RXC_04_x_HCC184_183_187_188 = 1 ;
+if RXC_05 = 1 and (HCC48 = 1 
+                   or HCC41 = 1
+                   ) then RXC_05_x_HCC048_041 = 1 ;
+if RXC_06 = 1 and (HCC18 = 1 
+                   or HCC19 = 1
+                   or HCC20 = 1
+                   or HCC21 = 1
+                   ) then RXC_06_x_HCC018_019_020_021 = 1 ;
+if RXC_07 = 1 and (HCC18 = 1 
+                   or HCC19 = 1
+                   or HCC20 = 1
+                   or HCC21 = 1
+                   ) then RXC_07_x_HCC018_019_020_021 = 1 ;
+if RXC_08 = 1 and HCC118 = 1 then RXC_08_x_HCC118 = 1 ;
+if RXC_09 = 1 and (HCC56 = 1 
+                   or HCC57 = 1) and
+                     (HCC48 = 1
+                     or HCC41 = 1
+                     ) then RXC_09_x_HCC056_057_and_048_041 = 1 ;
+if RXC_09 = 1 and HCC56 = 1 then RXC_09_x_HCC056 = 1 ;
+if RXC_09 = 1 and HCC57 = 1 then RXC_09_x_HCC057 = 1 ;
+if RXC_09 = 1 and (HCC48 = 1
+                   or HCC41 = 1
+                   ) then RXC_09_x_HCC048_041 = 1 ;
+if RXC_10 = 1 and (HCC159 = 1 
+                   or HCC158 = 1
+                   ) then RXC_10_x_HCC159_158 = 1 ;
+if RXC_11 = 1 and (HCC36 = 1 
+                   or HCC35 = 1
+                   or HCC34 = 1
+                   ) then RXC_11_x_HCC036_035_034 = 1 ;
+if RXC_12 = 1 and (HCC130 = 1 
+                   or HCC129 = 1
+                   or HCC128 = 1
+                   ) then RXC_12_x_HCC130_129_128 = 1 ;
+
+%mend GENERATE_ADULT_VARIABLES;
+
+**===========================================================================**;
+** generate variables specific to CHILD model                                **;
+%macro GENERATE_CHILD_VARIABLES;
+
+** child HCC groups **;
+do i=1 to dim(_CHILD_GROUPS);
+ _CHILD_GROUPS(i)=0;
+end;
+
+** mandatory for children **;
+HHS_HCC064 = 0;
+HHS_HCC242 = 0;
+HHS_HCC243 = 0;
+HHS_HCC244 = 0;
+HHS_HCC245 = 0;
+HHS_HCC246 = 0;
+HHS_HCC247 = 0;
+HHS_HCC248 = 0;
+HHS_HCC249 = 0;
+
+** these are not mutex **;
+if HHS_HCC019=1 or HHS_HCC020=1 or HHS_HCC021=1 then do;
+ HHS_HCC019=0;
+ HHS_HCC020=0;
+ HHS_HCC021=0;
+ G01=1;
+end;
+if HHS_HCC026=1 or HHS_HCC027=1 or HHS_HCC028=1 or HHS_HCC029=1 or HHS_HCC030=1 then do;
+ HHS_HCC026=0;
+ HHS_HCC027=0;
+ HHS_HCC028=0;
+ HHS_HCC029=0;
+ HHS_HCC030=0;
+ G02=1;
+end;
+if HHS_HCC054=1 or HHS_HCC055=1 then do;
+ HHS_HCC054=0;
+ HHS_HCC055=0;
+ G03=1;
+end;
+if HHS_HCC061=1 or HHS_HCC062=1 then do;
+ HHS_HCC061=0;
+ HHS_HCC062=0;
+ G04=1;
+end;
+if HHS_HCC067=1 or HHS_HCC068=1 then do;
+ HHS_HCC067=0;
+ HHS_HCC068=0;
+ G06=1;
+end;
+if HHS_HCC069=1 or HHS_HCC070=1 or HHS_HCC071=1 then do;
+ HHS_HCC069=0;
+ HHS_HCC070=0;
+ HHS_HCC071=0;
+ G07=1;
+end;
+if HHS_HCC073=1 or HHS_HCC074=1 then do;
+ HHS_HCC073=0;
+ HHS_HCC074=0;
+ G08=1;
+end;
+if HHS_HCC081=1 or HHS_HCC082=1 then do;
+ HHS_HCC081=0;
+ HHS_HCC082=0;
+ G09=1;
+end;
+if HHS_HCC106=1 or HHS_HCC107=1 then do;
+ HHS_HCC106=0;
+ HHS_HCC107=0;
+ G10=1;
+end;
+if HHS_HCC108=1 or HHS_HCC109=1 then do;
+ HHS_HCC108=0;
+ HHS_HCC109=0;
+ G11=1;
+end;
+if HHS_HCC117=1 or HHS_HCC119=1 then do;
+ HHS_HCC117=0;
+ HHS_HCC119=0;
+ G12=1;
+end;
+if HHS_HCC126=1 or HHS_HCC127=1 then do;
+ HHS_HCC126=0;
+ HHS_HCC127=0;
+ G13=1;
+end;
+if HHS_HCC128=1 or HHS_HCC129=1 then do;
+ HHS_HCC128=0;
+ HHS_HCC129=0;
+ G14=1;
+end;
+if HHS_HCC160=1 or HHS_HCC161=1 then do;
+ HHS_HCC160=0;
+ HHS_HCC161=0;
+ G15=1;
+end;
+if HHS_HCC187=1 or HHS_HCC188=1 then do;
+ HHS_HCC187=0;
+ HHS_HCC188=0;
+ G16=1;
+end;
+if HHS_HCC203=1 or HHS_HCC204=1 or HHS_HCC205=1 then do;
+ HHS_HCC203=0;
+ HHS_HCC204=0;
+ HHS_HCC205=0;
+ G17=1;
+end;
+if HHS_HCC207=1 or HHS_HCC208=1 or HHS_HCC209=1 then do;
+ HHS_HCC207=0;
+ HHS_HCC208=0;
+ HHS_HCC209=0;
+ G18=1;
+end;
+%mend GENERATE_CHILD_VARIABLES;
+
+**===========================================================================**;
+** generate variables specific to INFANT model                               **;
+%macro GENERATE_INFANT_VARIABLES;
+
+** severity levels, 5 is highest, enrollee may have more than one level **;
+do i=1 to dim(_IHCC_SEVERITY);
+ _IHCC_SEVERITY(i)=0;
+end;
+
+** mandatory for infants **;
+HHS_HCC087 = 0;
+HHS_HCC088 = 0;
+HHS_HCC089 = 0;
+HHS_HCC090 = 0;
+HHS_HCC094 = 0;
+HHS_HCC203 = 0;
+HHS_HCC204 = 0;
+HHS_HCC205 = 0;
+HHS_HCC207 = 0;
+HHS_HCC208 = 0; 
+HHS_HCC209 = 0;
+
+** these are not mutex **;
+select;
+ when (HHS_HCC008  =1) IHCC_Severity5=1;
+ when (HHS_HCC018  =1) IHCC_Severity5=1;
+ when (HHS_HCC034  =1) IHCC_Severity5=1;
+ when (HHS_HCC035  =1) IHCC_Severity5=1;
+ when (HHS_HCC041  =1) IHCC_Severity5=1;
+ when (HHS_HCC042  =1) IHCC_Severity5=1;
+ when (HHS_HCC125  =1) IHCC_Severity5=1;
+ when (HHS_HCC128  =1) IHCC_Severity5=1;
+ when (HHS_HCC129  =1) IHCC_Severity5=1;
+ when (HHS_HCC130  =1) IHCC_Severity5=1;
+ when (HHS_HCC137  =1) IHCC_Severity5=1;
+ when (HHS_HCC158  =1) IHCC_Severity5=1;
+ when (HHS_HCC183  =1) IHCC_Severity5=1;
+ when (HHS_HCC184  =1) IHCC_Severity5=1;
+ when (HHS_HCC251  =1) IHCC_Severity5=1;
+ otherwise;
+end;
+
+select;
+ when (HHS_HCC002  =1) IHCC_Severity4=1;
+ when (HHS_HCC009  =1) IHCC_Severity4=1;
+ when (HHS_HCC026  =1) IHCC_Severity4=1;
+ when (HHS_HCC064  =1) IHCC_Severity4=1;
+ when (HHS_HCC067  =1) IHCC_Severity4=1;
+ when (HHS_HCC068  =1) IHCC_Severity4=1;
+ when (HHS_HCC073  =1) IHCC_Severity4=1;
+ when (HHS_HCC106  =1) IHCC_Severity4=1;
+ when (HHS_HCC107  =1) IHCC_Severity4=1;
+ when (HHS_HCC111  =1) IHCC_Severity4=1;
+ when (HHS_HCC112  =1) IHCC_Severity4=1;
+ when (HHS_HCC115  =1) IHCC_Severity4=1;
+ when (HHS_HCC122  =1) IHCC_Severity4=1;
+ when (HHS_HCC126  =1) IHCC_Severity4=1;
+ when (HHS_HCC127  =1) IHCC_Severity4=1;
+ when (HHS_HCC131  =1) IHCC_Severity4=1;
+ when (HHS_HCC135  =1) IHCC_Severity4=1;
+ when (HHS_HCC138  =1) IHCC_Severity4=1;
+ when (HHS_HCC145  =1) IHCC_Severity4=1;
+ when (HHS_HCC146  =1) IHCC_Severity4=1;
+ when (HHS_HCC154  =1) IHCC_Severity4=1;
+ when (HHS_HCC156  =1) IHCC_Severity4=1;
+ when (HHS_HCC163  =1) IHCC_Severity4=1;
+ when (HHS_HCC187  =1) IHCC_Severity4=1;
+ when (HHS_HCC226  =1) IHCC_Severity4=1;
+ when (HHS_HCC253  =1) IHCC_Severity4=1;
+ otherwise;
+end;
+
+select;
+ when (HHS_HCC001  =1) IHCC_Severity3=1;
+ when (HHS_HCC003  =1) IHCC_Severity3=1;
+ when (HHS_HCC006  =1) IHCC_Severity3=1;
+ when (HHS_HCC010  =1) IHCC_Severity3=1;
+ when (HHS_HCC011  =1) IHCC_Severity3=1;
+ when (HHS_HCC012  =1) IHCC_Severity3=1;
+ when (HHS_HCC027  =1) IHCC_Severity3=1;
+ when (HHS_HCC030  =1) IHCC_Severity3=1;
+ when (HHS_HCC038  =1) IHCC_Severity3=1;
+ when (HHS_HCC045  =1) IHCC_Severity3=1;
+ when (HHS_HCC054  =1) IHCC_Severity3=1;
+ when (HHS_HCC055  =1) IHCC_Severity3=1;
+ when (HHS_HCC061  =1) IHCC_Severity3=1;
+ when (HHS_HCC063  =1) IHCC_Severity3=1;
+ when (HHS_HCC066  =1) IHCC_Severity3=1;
+ when (HHS_HCC074  =1) IHCC_Severity3=1;
+ when (HHS_HCC075  =1) IHCC_Severity3=1;
+ when (HHS_HCC096  =1) IHCC_Severity3=1;
+ when (HHS_HCC108  =1) IHCC_Severity3=1;
+ when (HHS_HCC109  =1) IHCC_Severity3=1;
+ when (HHS_HCC110  =1) IHCC_Severity3=1;
+ when (HHS_HCC113  =1) IHCC_Severity3=1;
+ when (HHS_HCC117  =1) IHCC_Severity3=1;
+ when (HHS_HCC119  =1) IHCC_Severity3=1;
+ when (HHS_HCC121  =1) IHCC_Severity3=1;
+ when (HHS_HCC132  =1) IHCC_Severity3=1;
+ when (HHS_HCC139  =1) IHCC_Severity3=1;
+ when (HHS_HCC142  =1) IHCC_Severity3=1;
+ when (HHS_HCC149  =1) IHCC_Severity3=1;
+ when (HHS_HCC150  =1) IHCC_Severity3=1;
+ when (HHS_HCC159  =1) IHCC_Severity3=1;
+ when (HHS_HCC162  =1) IHCC_Severity3=1;
+ when (HHS_HCC227  =1) IHCC_Severity3=1;
+ otherwise;
+end;
+
+select;
+ when (HHS_HCC004  =1) IHCC_Severity2=1;
+ when (HHS_HCC013  =1) IHCC_Severity2=1;
+ when (HHS_HCC019  =1) IHCC_Severity2=1;
+ when (HHS_HCC020  =1) IHCC_Severity2=1;
+ when (HHS_HCC021  =1) IHCC_Severity2=1;
+ when (HHS_HCC023  =1) IHCC_Severity2=1;
+ when (HHS_HCC028  =1) IHCC_Severity2=1;
+ when (HHS_HCC029  =1) IHCC_Severity2=1;
+ when (HHS_HCC036  =1) IHCC_Severity2=1;
+ when (HHS_HCC046  =1) IHCC_Severity2=1;
+ when (HHS_HCC048  =1) IHCC_Severity2=1;
+ when (HHS_HCC056  =1) IHCC_Severity2=1;
+ when (HHS_HCC057  =1) IHCC_Severity2=1;
+ when (HHS_HCC062  =1) IHCC_Severity2=1;
+ when (HHS_HCC069  =1) IHCC_Severity2=1;
+ when (HHS_HCC070  =1) IHCC_Severity2=1;
+ when (HHS_HCC081  =1) IHCC_Severity2=1;
+ when (HHS_HCC082  =1) IHCC_Severity2=1;
+ when (HHS_HCC097  =1) IHCC_Severity2=1;
+ when (HHS_HCC114  =1) IHCC_Severity2=1;
+ when (HHS_HCC120  =1) IHCC_Severity2=1;
+ when (HHS_HCC151  =1) IHCC_Severity2=1;
+ when (HHS_HCC153  =1) IHCC_Severity2=1;
+ when (HHS_HCC160  =1) IHCC_Severity2=1;
+ when (HHS_HCC217  =1) IHCC_Severity2=1;
+ otherwise;
+end;
+
+select;
+ when (HHS_HCC037_1=1) IHCC_Severity1=1;
+ when (HHS_HCC037_2=1) IHCC_Severity1=1;
+ when (HHS_HCC047  =1) IHCC_Severity1=1;
+ when (HHS_HCC071  =1) IHCC_Severity1=1;
+ when (HHS_HCC102  =1) IHCC_Severity1=1;
+ when (HHS_HCC103  =1) IHCC_Severity1=1;
+ when (HHS_HCC118  =1) IHCC_Severity1=1;
+ when (HHS_HCC161  =1) IHCC_Severity1=1;
+ when (HHS_HCC188  =1) IHCC_Severity1=1;
+ when (HHS_HCC254  =1) IHCC_Severity1=1;
+ otherwise;
+end;
+
+** impose hierarchy as enrollee may have more than one level **;
+if IHCC_Severity5=1 then do;
+ IHCC_Severity4=0;
+ IHCC_Severity3=0;
+ IHCC_Severity2=0; 
+ IHCC_Severity1=0;
+end;
+else if IHCC_Severity4=1 then do;
+ IHCC_Severity3=0;
+ IHCC_Severity2=0;
+ IHCC_Severity1=0;
+end;
+else if IHCC_Severity3=1 then do;
+ IHCC_Severity2=0;
+ IHCC_Severity1=0;
+end;
+else if IHCC_Severity2=1 then IHCC_Severity1=0;
+** default level **;
+else IHCC_Severity1=1;
+
+** maturity levels, enrollee may have more than one level **;
+do i=1 to dim(_IHCC_MATURITY);
+ _IHCC_MATURITY(i)=0;
+end;
+
+if AGE_LAST=1 then IHCC_Age1=1;
+else do;
+ ** age 0, not mutually exclusive so no ELSE **;
+ if HHS_HCC242=1 or HHS_HCC243=1 or HHS_HCC244=1 then IHCC_Extremely_Immature=1;
+ if HHS_HCC245=1 or HHS_HCC246=1 then IHCC_Immature=1;
+ if HHS_HCC247=1 or HHS_HCC248=1 then IHCC_Premature_Multiples=1;
+ if HHS_HCC249=1 then IHCC_Term=1;
+   ** reassign age 0 infants with no birth code to Age 1 so that the birth is not assigned twice ;
+ if HHS_HCC242 = 0 and HHS_HCC243 = 0 and HHS_HCC244 = 0 and HHS_HCC245 = 0 and HHS_HCC246 = 0 and HHS_HCC247 = 0 and  HHS_HCC248 = 0 and HHS_HCC249 = 0 then IHCC_AGE1 = 1;
+ ** impose hierarchy as enrollee may have more than one level **;
+ if IHCC_Extremely_Immature=1 then do;
+  IHCC_Immature           =0;
+  IHCC_Premature_Multiples=0;
+  IHCC_Term               =0;
+  IHCC_AGE1               =0;
+ end;
+ else if IHCC_Immature=1 then do;
+  IHCC_Premature_Multiples=0;
+  IHCC_Term               =0;
+  IHCC_AGE1               =0;
+ end;
+ else if IHCC_Premature_Multiples=1 then do ;
+  IHCC_Term               =0;
+  IHCC_AGE1               =0;
+ end ;
+ ** age 0 default level, as age 0 should have at least one HCC 242-249 **;
+ else if IHCC_Term=1 then IHCC_AGE1=0;
+
+end;
+
+if AGE_LAST = 0 and IHCC_Age1 = 1 and AGE0_MALE = 1 then do ;
+ AGE1_MALE = 1; 
+ AGE0_MALE = 0; 
+end ;
+
+do i=1 to dim(_SEV_MAT_INTERACTIONS);
+ _SEV_MAT_INTERACTIONS(i)=0;
+end;
+
+** severity level x maturity interactions **;
+Extremely_Immature_x_Severity5     = IHCC_Severity5 * IHCC_Extremely_Immature;
+Immature_x_Severity5               = IHCC_Severity5 * IHCC_Immature;
+Premature_Multiples_x_Severity5    = IHCC_Severity5 * IHCC_Premature_Multiples;
+Term_x_Severity5                   = IHCC_Severity5 * IHCC_Term;
+Age1_x_Severity5                   = IHCC_Severity5 * IHCC_Age1;
+Extremely_Immature_x_Severity4     = IHCC_Severity4 * IHCC_Extremely_Immature;
+Immature_x_Severity4               = IHCC_Severity4 * IHCC_Immature;
+Premature_Multiples_x_Severity4    = IHCC_Severity4 * IHCC_Premature_Multiples;
+Term_x_Severity4                   = IHCC_Severity4 * IHCC_Term;
+Age1_x_Severity4                   = IHCC_Severity4 * IHCC_Age1;
+Extremely_Immature_x_Severity3     = IHCC_Severity3 * IHCC_Extremely_Immature;
+Immature_x_Severity3               = IHCC_Severity3 * IHCC_Immature;
+Premature_Multiples_x_Severity3    = IHCC_Severity3 * IHCC_Premature_Multiples;
+Term_x_Severity3                   = IHCC_Severity3 * IHCC_Term;
+Age1_x_Severity3                   = IHCC_Severity3 * IHCC_Age1;
+Extremely_Immature_x_Severity2     = IHCC_Severity2 * IHCC_Extremely_Immature;
+Immature_x_Severity2               = IHCC_Severity2 * IHCC_Immature;
+Premature_Multiples_x_Severity2    = IHCC_Severity2 * IHCC_Premature_Multiples;
+Term_x_Severity2                   = IHCC_Severity2 * IHCC_Term;
+Age1_x_Severity2                   = IHCC_Severity2 * IHCC_Age1;
+Extremely_Immature_x_Severity1     = IHCC_Severity1 * IHCC_Extremely_Immature;
+Immature_x_Severity1               = IHCC_Severity1 * IHCC_Immature;
+Premature_Multiples_x_Severity1    = IHCC_Severity1 * IHCC_Premature_Multiples;
+Term_x_Severity1                   = IHCC_Severity1 * IHCC_Term;
+Age1_x_Severity1                   = IHCC_Severity1 * IHCC_Age1;
+%mend GENERATE_INFANT_VARIABLES;
+
+**===========================================================================**;
+** check existence of user-provided variable                                 **;
+%macro CHECK_VARIABLE_EXISTS(LONGFILE,VAR);
+Check=varnum(dsid,"&VAR");
+if Check=0 then do;
+ &MSG01 put "ERROR  : [Msg01] Variable &VAR is not in &LONGFILE file";
+ Flag=1; 
+end;
+%mend CHECK_VARIABLE_EXISTS;
+
+**===========================================================================**;
+** check data type of user-provided variable                                 **;
+%macro CHECK_DATA_TYPE(VAR,TYPE,LONGTYPE,LONGFILE);
+if vtype(&VAR) ne "&TYPE" then do; 
+ &MSG02 put "ERROR  : [Msg02] User-provided variable &VAR in &LONGFILE file must be &LONGTYPE type"; 
+ Flag=1; 
+end;
+%mend CHECK_DATA_TYPE;
+
+**===========================================================================**;
+** zero HCCs, used in hierarchy checking macro     xxx                       **;
+%macro SET0(CC=, HIER=);
+%if &cc = 37.1 %then %do ;
+ if HCC37_1 = 1 then HCC37_2 = 0 ;
+%end ;
+%else %do ;
+ if HCC&CC=1 then do i = &HIER; 
+  if i = 37.1 then HCC37_1 = 0 ;
+  else if i = 37.2 then HCC37_2 = 0 ;
+  else if i < 37 then  _HCC(i) = 0 ; 
+  else _HCC(i+1) = 0 ;
+ end;
+%end ;
+%mend SET0; 
+
+**===========================================================================**;
+** fix cc greater than 37 adjusted for 37.1 and 37.2 split                   **;
+%macro fix_ind ;
+ if IND > 37 then do ;
+   if IND = 37.1 then IND = 37 ;
+   else if IND = 37.2 then IND = 38 ;
+   else IND = IND + 1 ;
+ end ;
+%mend fix_ind ;
+
+
+**===========================================================================**;
+** lookup CCs for primary and secondary assignment, VC is 9/0                **;
+%macro FIND_CCs(VC);
+** 
+set elements of 0/1 array _C(*) to 1.                                     
+steps:                                                               
+ o CC initialized to 9999.                                                 
+ o DIAG is sent to diagnoses edit macro. If CC is changed to -1 it means   
+    DIAG did not pass edits and nothing else needs to be done with it.     
+ o If CC set to another number < 37 - nothing else needs to be done.            
+ o If CC set to another number > 37 - adjust for 37 split.            
+ o If CC is still 9999, primary assignment and secondary assigment       
+    must be done.                                                           
+**;
+if CC ne "-1.0" and CC ne "9999" then do;
+ ** c to n conversion **;
+ IND=input(CC,8.);
+%fix_ind ;
+ ** poke returned valid array pointer CC into 0/1 array with value=1 **;
+ if 1 <= IND <= dim(_C) then _C(IND)=1;
+ ** for debugging **;
+ *file print; *put "Find " DIAG= CC= IND=;
+end;
+else if CC="9999" then do; 
+ ** some diagnoses get multiple CCs **;
+ ** CC creation depends on ICD version code **;
+ ** CC creation uses a separate format for 2018 fiscal year and 2019 fiscal year **;
+if '01JAN2018'd <= Diagnosis_service_date < '01OCT2018'd then do ;
+   ** primary assignment **;
+   IND = input(left(put(DIAG,$I&VC&&CCFMT0Y1..)),8.); %fix_ind ; 
+   if 1 <= IND <= dim(_C) then _C(IND)=1;
+   ** for debugging **;
+   *file print; *put "Find " DIAG= CC= IND=;
+   ** duplicate assignment **;
+   IND = input(left(put(DIAG,$I&VC.dup_&&CCFMT0Y1..)),8.); %fix_ind ;
+   if 1 <= IND <= dim(_C) then _C(IND)=1;
+   ** for debugging **;
+   *file print; *put "Find " DIAG= CC= IND=;
+ end ;
+ else if '01OCT2018'd <= Diagnosis_service_date <= '31DEC2018'd then do ;  
+   ** primary assignment **;
+   IND = input(left(put(DIAG,$I&VC&&CCFMT0Y2..)),8.); %fix_ind ;
+   if 1 <= IND <= dim(_C) then _C(IND)=1;
+   ** for debugging **;
+   *file print; *put "Find " DIAG= CC= IND=;
+   ** duplicate assignment **;
+   IND = input(left(put(DIAG,$I&VC.dup_&&CCFMT0Y2..)),8.); %fix_ind ;
+   if 1 <= IND <= dim(_C) then _C(IND)=1;
+   ** for debugging **;
+   *file print; *put "Find " DIAG= CC= IND=;
+ end ;
+end;
+** CC=-1 means diag did not pass edits **;
+%mend FIND_CCs;
+
+**===========================================================================**;
+** lookup RXCs for assignment-NDC version                                    **;
+%macro FIND_RXCsN;
+** 
+set elements of 0/1 array _RXC(*) to 1.                                     
+**;
+   ** primary assignment **;
+   IND = input(left(put(NDC,$&NDCFMTN..)),8.);
+   if 1 <= IND <= dim(_RXC) then _RXC(IND)=1;
+%mend FIND_RXCsN;
+
+**===========================================================================**;
+** lookup RXCs for assignment-HCPCS version                                    **;
+%macro FIND_RXCsH;
+** 
+set elements of 0/1 array _RXC(*) to 1.                                     
+**;
+   ** primary assignment **;
+   IND = input(left(put(HCPCS,$&NDCFMTH..)),8.);
+   if 1 <= IND <= dim(_RXC) then _RXC(IND)=1;
+%mend FIND_RXCsH;
+
+**===========================================================================**;
+** check existance of dataset                                                **;
+%macro CHECKDS(FILE,LONGFILE);
+%if %sysfunc(exist(&FILE)) %then;
+%else %do;
+ data _null_;
+  file print ls=255;
+  &MSG30 put "ERROR  : [Msg30] Program halted, file &LONGFILE does not exist"; 
+  abort; run;
+%end;
+%mend CHECKDS;
+
+**===========================================================================**;
+**===========================================================================**;
+**===========================================================================**;
+
+**===========================================================================**;
+** merge person, diagnosis, and NDC datasets, outputting one record          **;
+** per person containing score, RXC, and HHS-HCC variables for each input    **;
+** person-level record fully compliant with validity filters                 **;
+**===========================================================================**;
+title2 "Errors/warnings/notes log";
+title3 " ";
+
+** pre-pass failsafe check that PERSON dataset exists **;
+%CHECKDS(&INP,PERSON);
+
+** pre-pass failsafe check that DIAG dataset exists **;
+%CHECKDS(&IND,DIAG);
+
+** pre-pass failsafe check that NDC dataset exists **;
+%CHECKDS(&INN,NDC);
+
+** pre-pass failsafe check that HCPCS dataset exists **;
+%CHECKDS(&INH,HCPCS);
+
+** pre-pass failsafe check for multiple PERSON records **;
+data _null_;
+ length Flag 3;
+ retain Flag 0;
+ set &INP(keep=&IDVAR) END=END;
+ by &IDVAR;
+ file print ls=255;
+ if first.&IDVAR and last.&IDVAR then;
+ else do;
+  Flag=1;
+  &MSG03 put "ERROR  : [Msg03] Duplicate &IDVAR.s in PERSON file " &IDVAR=; 
+ end;
+ if END then do;
+  if Flag=1 then do;
+   &MSG04 put "ERROR  : [Msg04] Program halted due to duplicate &IDVAR.s in PERSON file"; 
+   abort; 
+  end; 
+  else do;
+   &MSG05 put "OK     : [Msg05] PERSON file is free of duplicate &IDVAR.s"; 
+  end;
+ end; run;
+
+**===========================================================================**;
+** pre-pass failsafe check of PERSON file for non-existent user-provided variables **;
+data _null_;
+ length Flag 3;
+ file print ls=255;
+ Flag=0;
+ dsid=open("&INP");
+ %CHECK_VARIABLE_EXISTS(PERSON,&IDVAR       );
+ %CHECK_VARIABLE_EXISTS(PERSON,SEX          );
+ %CHECK_VARIABLE_EXISTS(PERSON,DOB          );
+ %CHECK_VARIABLE_EXISTS(PERSON,AGE_LAST     );
+ %CHECK_VARIABLE_EXISTS(PERSON,METAL        );
+ %CHECK_VARIABLE_EXISTS(PERSON,CSR_INDICATOR); 
+ %CHECK_VARIABLE_EXISTS(PERSON,ENROLDURATION); 
+ if Flag=1 then do;
+  &MSG06 put "ERROR  : [Msg06] Program halted due to non-existent variable(s) in PERSON file";
+  abort; 
+ end;
+ else do;
+  &MSG07 put "OK     : [Msg07] PERSON file contains all requisite variables"; 
+ end; run;
+
+**===========================================================================**;
+** pre-pass failsafe check of PERSON file for invalid data types in user-provided variables **;
+data _null_;
+ length Flag 3;
+ set &INP(obs=1);
+ file print ls=255;
+ ** IDVAR can be either type **;
+ %CHECK_DATA_TYPE(SEX          ,C,character,PERSON);
+ %CHECK_DATA_TYPE(DOB          ,N,numeric  ,PERSON);
+ %CHECK_DATA_TYPE(AGE_LAST     ,N,numeric  ,PERSON);
+ %CHECK_DATA_TYPE(METAL        ,C,character,PERSON);
+ %CHECK_DATA_TYPE(CSR_INDICATOR,N,numeric  ,PERSON);
+ if Flag=1 then do;
+  &MSG08 put "ERROR  : [Msg08] Program halted due to incorrect user-provided variable type(s) in PERSON file"; 
+  abort; 
+ end;
+ else do;
+  &MSG09 put "OK     : [Msg09] PERSON file`s variables have the correct type"; 
+ end; run;
+
+**===========================================================================**;
+** pre-pass failsafe check of DIAG file for non-existent user-provided variables **;
+data _null_;
+ length Flag 3;
+ file print ls=255;
+ Flag=0;
+ dsid=open("&IND");
+ %CHECK_VARIABLE_EXISTS(DIAG,&IDVAR                );
+ %CHECK_VARIABLE_EXISTS(DIAG,DIAG                  );
+ %CHECK_VARIABLE_EXISTS(DIAG,DIAGNOSIS_SERVICE_DATE);
+ if Flag=1 then do;
+  &MSG10 put "ERROR  : [Msg10] Program halted due to non-existent variable(s) in DIAG file";
+  abort; 
+ end;
+ else do;
+  &MSG11 put "OK     : [Msg11] DIAG file contains all requisite variables"; 
+ end; run;
+
+**===========================================================================**;
+** pre-pass failsafe check of DIAG file for invalid data types in user-provided variables **;
+data _null_;
+ length Flag 3;
+ set &IND(obs=1);
+ file print ls=255;
+ ** IDVAR can be either type **;
+ %CHECK_DATA_TYPE(DIAG                  ,C,character,DIAG);
+ %CHECK_DATA_TYPE(DIAGNOSIS_SERVICE_DATE,N,numeric  ,DIAG);
+ if Flag=1 then do;
+  &MSG12 put "ERROR  : [Msg12] Program halted due to incorrect user-provided variable type(s) in DIAG file"; 
+  abort; 
+ end;
+ else do;
+  &MSG13 put "OK     : [Msg13] DIAG file`s variables have the correct type"; 
+ end; run;
+
+**===========================================================================**;
+** pre-pass failsafe check of NDC file for non-existent user-provided variables **;
+data _null_;
+ length Flag 3;
+ file print ls=255;
+ Flag=0;
+ dsid=open("&INN");
+ %CHECK_VARIABLE_EXISTS(NDC,&IDVAR                );
+ %CHECK_VARIABLE_EXISTS(NDC,NDC                  );
+ if Flag=1 then do;
+  &MSG34 put "ERROR  : [Msg34] Program halted due to non-existent variable(s) in NDC file";
+  abort; 
+ end;
+ else do;
+  &MSG35 put "OK     : [Msg35] NDC file contains all requisite variables"; 
+ end; run;
+
+**===========================================================================**;
+** pre-pass failsafe check of NDC file for invalid data types in user-provided variables **;
+data _null_;
+ length Flag 3;
+ set &INN(obs=1);
+ file print ls=255;
+ ** IDVAR can be either type **;
+ %CHECK_DATA_TYPE(NDC                  ,C,character,NDC);
+ if Flag=1 then do;
+  &MSG36 put "ERROR  : [Msg36] Program halted due to incorrect user-provided variable type(s) in NDC file"; 
+  abort; 
+ end;
+ else do;
+  &MSG37 put "OK     : [Msg37] NDC file`s variables have the correct type"; 
+ end; run;
+
+**===========================================================================**;
+** pre-pass failsafe check of HCPCS file for non-existent user-provided variables **;
+data _null_;
+ length Flag 3;
+ file print ls=255;
+ Flag=0;
+ dsid=open("&INH");
+ %CHECK_VARIABLE_EXISTS(HCPCS,&IDVAR                );
+ %CHECK_VARIABLE_EXISTS(HCPCS,HCPCS                  );
+ if Flag=1 then do;
+  &MSG41 put "ERROR  : [Msg41] Program halted due to non-existent variable(s) in HCPCS file";
+  abort; 
+ end;
+ else do;
+  &MSG42 put "OK     : [Msg42] HCPCS file contains all requisite variables"; 
+ end; run;
+
+**===========================================================================**;
+** pre-pass failsafe check of HCPCS file for invalid data types in user-provided variables **;
+data _null_;
+ length Flag 3;
+ set &INH(obs=1);
+ file print ls=255;
+ ** IDVAR can be either type **;
+ %CHECK_DATA_TYPE(HCPCS                  ,C,character,HCPCS);
+ if Flag=1 then do;
+  &MSG43 put "ERROR  : [Msg43] Program halted due to incorrect user-provided variable type(s) in HCPCS file"; 
+  abort; 
+ end;
+ else do;
+  &MSG44 put "OK     : [Msg44] HCPCS file`s variables have the correct type"; 
+ end; run;
+
+** process NDC file to RXCs **;
+data NDC_1 (keep=&IDVAR %RXC_FULL_LIST) ;
+ length %RXC_FULL_LIST 3 ;
+ retain %RXC_FULL_LIST ;
+
+ file print ls=255;
+
+ array _RXC          %RXC_FULL_LIST ;
+
+ merge 
+  &INP(in=InPerson)
+  &INN (in=inNDC) ;
+ by &IDVAR ;
+
+ ** NDC but no person record, NDC rejected **;
+ if InNDC and not InPerson then do;
+  &MSG38 put "WARNING: [Msg38] NDC matches no enrollee, NDC ignored " 
+    @71 &IDVAR= NDC= ;
+ end;
+
+ if first.&IDVAR then do ;
+   ** set RXCs to 0 **;
+   do i = 1 to dim(_RXC) ;
+      _RXC(i)=0 ;
+   end ;
+ end /*if first.IDVAR*/;
+ **  - create RXCs using format &NDCFMTN                      **;
+ if InNDC then do ;
+  if missing(NDC) then do;
+   &MSG39 put "WARNING: [Msg39] Blank NDC code, NDC ignored " @71 &IDVAR= NDC=;
+  end;
+  else do ;
+   _valid = input(left(put(NDC,$&NDCFMTN..)),8.);
+   if 1 <= _valid <= dim(_RXC) then RXC = "9999" ;
+   else RXC="-1.0" ;
+  end ;
+ end ;
+
+ if RXC="9999" then do ;
+  %FIND_RXCSN;
+ end ;
+
+ **=========================================================================**;
+ ** lookup unsuccessful **;
+ if RXC in("-1.0") then do;
+  &MSG40 put "WARNING: [Msg40] NDC lookup failed, NDC ignored " @71 &IDVAR= NDC= ;
+ end;
+
+ **=========================================================================**;
+ ** output if last record for enrollee:                                     **;
+  if last.&IDVAR then output ;
+run ;
+
+data NDC (keep=&IDVAR %RXC_FULL_LIST) ;
+ length %RXC_FULL_LIST 3 ;
+ retain %RXC_FULL_LIST ;
+
+ file print ls=255;
+
+ array _RXC          %RXC_FULL_LIST ;
+
+ merge 
+  NDC_1 (in=inPerson)
+  &INH (in=inHCPCS) ;
+ by &IDVAR ;
+
+ ** HCPCS but no person record, HCPCS rejected **;
+ if InHCPCS and not InPerson then do;
+  &MSG45 put "WARNING: [Msg45] HCPCS matches no enrollee, HCPCS ignored " 
+    @71 &IDVAR= HCPCS= ;
+ end;
+
+ **  - create RXCs using format &NDCFMTH                      **;
+ if InHCPCS then do ;
+  if missing(HCPCS) then do;
+   &MSG46 put "WARNING: [Msg46] Blank HCPCS code, HCPCS ignored " @71 &IDVAR= HCPCS=;
+  end;
+  else do ;
+   _valid = input(left(put(HCPCS,$&NDCFMTH..)),8.);
+    if 1 <= _valid <= dim(_RXC) then RXC = "9999" ;
+   else RXC="-1.0" ;
+  end ;
+ end ;
+
+ if RXC="9999" then do ;
+  %FIND_RXCSH;
+ end ;
+
+ **=========================================================================**;
+ ** lookup unsuccessful **;
+ if RXC in("-1.0") then do;
+  &MSG47 put "WARNING: [Msg47] HCPCS lookup failed, HCPCS ignored " @71 &IDVAR= HCPCS= ;
+ end;
+
+ **=========================================================================**;
+ ** output if last record for enrollee:                                     **;
+  if last.&IDVAR then output ;
+run ;
+
+**===========================================================================**;
+data &OUTDATA(keep=&IDVAR &KEEPVAR);
+
+ **==========================================================================**;
+ ** declare lengths, retained variables, arrays                              **;
+ **==========================================================================**;
+ length
+  %AGE_SEX_LIST
+  %HCC_FULL_LIST 
+  %CC_FULL_LIST
+  %HHS_HCC_PM_LIST
+  %HCC_PM_LIST
+  %HHS_CC_PM_LIST
+  %CC_PM_LIST
+  %ADULT_GROUPS_LIST
+  %CHILD_GROUPS_LIST
+  %ADULT_VARIABLES_LIST
+  %CHILD_VARIABLES_LIST
+  %INFANT_VARIABLES_LIST
+  %SEVERE_V3_LIST
+  %INT_GROUP_H_LIST
+  %INT_GROUP_M_LIST
+  %IHCC_SEVERITY_LIST
+  %IHCC_MATURITY_LIST
+  %SEV_MAT_INTERACTIONS_LIST
+  ED_1-ED_11
+  %RXC_FULL_LIST
+  %RXC_INT_LIST
+  SEVERE_V3
+  ICD10Newborn 
+  DeleteRecord
+  IND
+  I
+  K
+  BadHCC 
+  NumberOfHCCs 
+  DeltaAge 3
+
+  OriginalDOB 
+  OriginalDIAGNOSIS_SERVICE_DATE 
+  %ALL_COEFFICIENTS_LIST 8
+
+  ICD10NewbornDiag $ 7
+
+  CC $ 4 
+
+  SEX_1_2 $ 1
+ ;
+
+ retain 
+  %CC_FULL_LIST
+  ICD10Newborn 
+  ICD10NewbornDiag
+  SEX_1_2
+  OriginalDOB
+  OriginalDIAGNOSIS_SERVICE_DATE;
+
+ file print ls=255;
+
+ **==========================================================================**;
+ ** arrays, naming convention is prefix `_` followed by upper case name      **;
+ **==========================================================================**;
+ array _AGE_SEX(*)                %AGE_SEX_LIST;
+
+ ** PM sets used in internal macros, suffix is 001,002,...  r.t. 1,2,...  **;
+ array _HHS_HCC_PM(*)             %HHS_HCC_PM_LIST;
+ array _HCC_PM(*)                 %HCC_PM_LIST;
+ array _HHS_CC_PM(*)              %HHS_CC_PM_LIST;
+ array _CC_PM(*)                  %CC_PM_LIST;
+
+ ** full sets used in external macros, suffix is 1,2,...  r.t. 001,002,... **;
+ array _C(*)                      %CC_FULL_LIST;
+ array _HCC(*)                    %HCC_FULL_LIST;
+
+ array _ADULT_COEFFICIENTS_AP(*)  %ADULT_COEFFICIENTS_LIST(AP);
+ array _ADULT_COEFFICIENTS_AG(*)  %ADULT_COEFFICIENTS_LIST(AG);
+ array _ADULT_COEFFICIENTS_AS(*)  %ADULT_COEFFICIENTS_LIST(AS);
+ array _ADULT_COEFFICIENTS_AB(*)  %ADULT_COEFFICIENTS_LIST(AB);
+ array _ADULT_COEFFICIENTS_AC(*)  %ADULT_COEFFICIENTS_LIST(AC);
+ array _ADULT_VARIABLES(*)        %ADULT_VARIABLES_LIST;
+ 
+ array _CHILD_COEFFICIENTS_CP(*)  %CHILD_COEFFICIENTS_LIST(CP);
+ array _CHILD_COEFFICIENTS_CG(*)  %CHILD_COEFFICIENTS_LIST(CG);
+ array _CHILD_COEFFICIENTS_CS(*)  %CHILD_COEFFICIENTS_LIST(CS);
+ array _CHILD_COEFFICIENTS_CB(*)  %CHILD_COEFFICIENTS_LIST(CB);
+ array _CHILD_COEFFICIENTS_CC(*)  %CHILD_COEFFICIENTS_LIST(CC);
+ array _CHILD_VARIABLES(*)        %CHILD_VARIABLES_LIST;
+ 
+ array _INFANT_COEFFICIENTS_IP(*) %INFANT_COEFFICIENTS_LIST(IP);
+ array _INFANT_COEFFICIENTS_IG(*) %INFANT_COEFFICIENTS_LIST(IG);
+ array _INFANT_COEFFICIENTS_IS(*) %INFANT_COEFFICIENTS_LIST(IS);
+ array _INFANT_COEFFICIENTS_IB(*) %INFANT_COEFFICIENTS_LIST(IB);
+ array _INFANT_COEFFICIENTS_IC(*) %INFANT_COEFFICIENTS_LIST(IC);
+ array _INFANT_VARIABLES(*)       %INFANT_VARIABLES_LIST;
+
+ array _ADULT_SCORES(*)           %ADULT_SCORES_LIST;
+ array _CHILD_SCORES(*)           %CHILD_SCORES_LIST;
+ array _INFANT_SCORES(*)          %INFANT_SCORES_LIST;
+ 
+ ** adult **;
+ array _SEVERE_V3(*)              %SEVERE_V3_LIST;
+ array _ADULT_GROUPS(*)           %ADULT_GROUPS_LIST;
+ array _INT_GROUP_M(*)            %INT_GROUP_M_LIST;
+ array _INT_GROUP_H(*)            %INT_GROUP_H_LIST;
+ array _ED(*)                     ED_1-ED_11 ;
+ array _RXC(*)                    %RXC_FULL_LIST ;
+ array _RXCint(*)                 %RXC_INT_LIST ;
+ 
+ ** child **;
+ array _CHILD_GROUPS(*)           %CHILD_GROUPS_LIST;
+ 
+ ** infant **;
+ array _IHCC_SEVERITY(*)          %IHCC_SEVERITY_LIST;
+ array _IHCC_MATURITY(*)          %IHCC_MATURITY_LIST;
+ array _SEV_MAT_INTERACTIONS(*)   %SEV_MAT_INTERACTIONS_LIST;
+
+ **==========================================================================**;
+ ** append calibration coefficients once                                     **;
+ **==========================================================================**;
+ if _n_=1 then set INCOEF.Coefficients;
+ 
+ **==========================================================================**;
+ ** merge person, diagnoses, and NDC datasets by &IDVAR                      **;
+ ** this assumes user has sorted both person and diagnoses datasets by       **;
+ ** &IDVAR and that person dataset contains no duplicates                    **;
+ **==========================================================================**;
+ merge 
+  &INP(in=InPerson)
+  &IND(in=InDiagnosis)
+  NDC(in=InNDC);
+ by &IDVAR;
+
+ **==========================================================================**;
+ ** diagnosis but no person record, diagnosis rejected **;
+ if InDiagnosis and not InPerson then do;
+  &MSG14 put "WARNING: [Msg14] Diagnosis matches no enrollee, diagnosis ignored " 
+    @71 &IDVAR= DIAG= DIAGNOSIS_SERVICE_DATE=;
+ end;
+
+ **==========================================================================**;
+ ** person record exists, may or may not have diagnoses **;
+ else do;
+
+  **==========================================================================**;
+  ** first record for person **;
+  if first.&IDVAR then do;
+   SEX=upcase(substr(left(SEX),1,1));
+   ** remap SEX (M/F) to comply with age/sex edits macro (1/2) **;
+   SEX_1_2=" ";
+   if      SEX in("M","1") then SEX_1_2="1";
+   else if SEX in("F","2") then SEX_1_2="2";
+   ** convert yyyymmdd to SAS date, suppress error message if invalid **;
+   OriginalDOB=DOB;
+   DOB=input(put(DOB,z8.),?? yymmdd8.); 
+   METAL=upcase(substr(left(METAL),1,1));
+   ** used to check for parent with newborn records **;
+   ICD10Newborn=0;
+   ICD10NewbornDiag=" ";
+   ** set CCs to 0 **;
+   do i=1 to dim(_C);
+    _C(i)=0;
+   end;
+  end /*if first.IDVAR*/;
+
+  **=========================================================================**;
+  ** if there are diagnoses for enrollee then do:                            **;
+  **  - create CCs using format &CCFMT0Y1 and &CCFMT0Y2                      **;
+  **  - perform ICD10 edits using macro &I0EMACRO                            **;
+  **  - assign additional CCs if applicable                                  **;
+  **=========================================================================**;
+  ** person has no diagnoses, OK, note only **;
+  if not InDiagnosis then do;
+    &MSG17 put "NOTE   : [Msg17] Enrollee has no diagnoses, risk score based on remaining information " 
+      @91 &IDVAR=;
+  end;
+
+  ** diagnosis record found **;
+  else do;
+   DIAG=upcase(left(DIAG));
+   ** convert yyyymmdd to SAS date, suppress error message if invalid **;
+   OriginalDIAGNOSIS_SERVICE_DATE=DIAGNOSIS_SERVICE_DATE;
+   DIAGNOSIS_SERVICE_DATE=input(put(DIAGNOSIS_SERVICE_DATE,z8.),?? yymmdd8.); 
+   ** compute age at diagnosis for MCE edits **;
+   if DOB ne . and DIAGNOSIS_SERVICE_DATE ne . then 
+     AGE_AT_DIAGNOSIS=floor(yrdif(DOB,DIAGNOSIS_SERVICE_DATE,"AGE"));
+   ** no negatives **;
+   if (. < AGE_AT_DIAGNOSIS < 0) then AGE_AT_DIAGNOSIS=0;
+ 
+   **=========================================================================**;
+   ** errors, do not perform lookup **;
+   DeltaAge=0;
+   if AGE_AT_DIAGNOSIS ne . and AGE_LAST ne . then DeltaAge=AGE_LAST-AGE_AT_DIAGNOSIS;
+   if missing(DIAG)                          or 
+      missing(DIAGNOSIS_SERVICE_DATE)        or 
+      AGE_AT_DIAGNOSIS < 0                   or 
+      SEX_1_2 not in("1","2")                or 
+      missing(AGE_LAST)                      or
+      AGE_AT_DIAGNOSIS > AGE_LAST            or
+      (not missing(DOB) and not missing(DIAGNOSIS_SERVICE_DATE) and DOB > DIAGNOSIS_SERVICE_DATE) or
+      DeltaAge > 1 then do;
+    ** signal only DIAG errors, these are not mutex so no ELSE **;
+    if missing(DIAG) and InDiagnosis then do;
+     &MSG15 put "WARNING: [Msg15] Blank diagnosis code, diagnosis ignored " @71 &IDVAR= DIAG=;
+    end;
+    if missing(DIAGNOSIS_SERVICE_DATE) then do;
+     &MSG27 put "WARNING: [Msg27] Invalid DIAGNOSIS_SERVICE_DATE, diagnosis ignored " 
+      @71 &IDVAR= OriginalDIAGNOSIS_SERVICE_DATE=;
+    end;
+    if AGE_AT_DIAGNOSIS<0 then do;
+     &MSG28 put "WARNING: [Msg28] Invalid AGE_AT_DIAGNOSIS, diagnosis ignored " 
+      @71 &IDVAR= OriginalDOB= OriginalDIAGNOSIS_SERVICE_DATE= AGE_AT_DIAGNOSIS=;
+    end;
+    if AGE_AT_DIAGNOSIS>AGE_LAST then do;
+     &MSG29 put "WARNING: [Msg29] AGE_AT_DIAGNOSIS > AGE_LAST, diagnosis ignored " 
+      @71 &IDVAR= AGE_AT_DIAGNOSIS= AGE_LAST=;
+    end;
+    if (not missing(DOB) and not missing(DIAGNOSIS_SERVICE_DATE) and DOB > DIAGNOSIS_SERVICE_DATE) then do;
+     &MSG32 put "WARNING: [Msg32] DOB > DIAGNOSIS_SERVICE_DATE, diagnosis ignored " 
+      @71 &IDVAR= OriginalDOB= OriginalDIAGNOSIS_SERVICE_DATE=;
+    end;
+    if DeltaAge>1 then do;
+     &MSG31 put "WARNING: [Msg31] AGE_LAST minus AGE_AT_DIAGNOSIS > 1, diagnosis ignored " 
+      @81 &IDVAR= AGE_AT_DIAGNOSIS= AGE_LAST=;
+    end;
+   end;
+
+   **=========================================================================**;
+   ** no errors, attempt lookup **;
+   else do;
+
+    ** ICD10 bundled claim check **;
+     ** flag if ICD10 code is on bundled claim list **;
+     ** infant with adult maternity diagnoses **;
+     if AGE_LAST = 0 and put(left(DIAG),$BY&yy2.M.)=1 then do;
+      ICD10Newborn=2;
+      ICD10NewbornDiag=DIAG;
+     end;
+     ** adult with infant newborn diagnoses **;
+     else if AGE_LAST >= 2 and put(left(DIAG),$BY&yy2.I.)=1 then do;
+      ICD10Newborn=1;
+      ICD10NewbornDiag=DIAG;
+     end;
+
+    ** ICD10 age/sex edits, returns updated array pointer CC (string), passes SEX as 1/2 **;
+    ** use AGE_AT_DIAGNOSIS for MCE edit, use AGE_LAST for CC (RTI) edit **;
+    *CC="9999"; **now set in validity check step 11/22/2016 ;
+    ** ICD10 **;
+     ** for debugging **;
+     *file print; *put;
+    ** check validity of icd codes ;
+      if '01JAN2018'd <= Diagnosis_service_date < '01OCT2018'd then do ;
+         _valid = input(left(put(DIAG,$I0&&CCFMT0Y1..)),8.);
+         if 1 <= _valid <= dim(_C) then CC ="9999" ;
+         else CC="-1.0" ;
+       end ;
+       else if '01OCT2018'd <= Diagnosis_service_date <= '31DEC2018'd then do ;
+         _valid = input(left(put(DIAG,$I0&&CCFMT0Y2..)),8.);
+         if 1 <= _valid <= dim(_C) then CC ="9999" ;
+         else CC="-1.0" ;
+       end ;
+
+   if CC="9999" then do ;
+     %if "&I0EMACRO" ne "" %then %&I0EMACRO(AGERTI=AGE_LAST,AGEMCE=AGE_AT_DIAGNOSIS,SEX=SEX_1_2,ICD0=DIAG); 
+   end ;
+     %FIND_CCS(0);
+
+    **=========================================================================**;
+    ** lookup unsuccessful **;
+    if CC in("-1.0") then do;
+     &MSG16 put "WARNING: [Msg16] Diagnosis lookup failed, diagnosis ignored " 
+        @71 &IDVAR= DIAG= AGE_LAST= AGE_AT_DIAGNOSIS= SEX_1_2=;
+    end;
+
+   end; /*no errors, attempt lookup*/
+
+  end; /*if InDiagnosis*/
+
+  **=========================================================================**;
+  ** if last record for enrollee:                                            **;
+  **  - create age/sex variables (macro &AGESEXMAC)                          **;
+  **  - create HCCs using hierarchies (macro &HIERMAC)                       **;
+  **  - set HCCs to zero if there are no diagnoses for enrollee              **;
+  **  - apply validity filters                                               **;
+  **  - create additional model-specific variables                           **;
+  **          - create scores for models                                     **;
+  **=========================================================================**;
+  if last.&IDVAR then do;
+   ** create age/sex variables **;
+   if "&AGESEXMAC" ne "" then do;
+    %&AGESEXMAC; 
+   end;
+
+   ** at least one diagnosis, even if rejected as invalid **;
+   if InDiagnosis then do;
+    ** map CCs to HCCs, apply HCC hierarchies **;
+    if "&HIERMAC" ne "" then do;
+     %&HIERMAC; 
+    end;
+   end;
+
+   ** no diagnoses, zero all CCs and HCCs **;
+   else do i=1 to dim(_HCC);
+    _HCC(i)=0;
+    _C(i)=0;
+   end;
+
+   ** hierarchy check for RXC **;
+   if inNDC then do ;
+      if RXC_06 = 1 then RXC_07 = 0 ;
+   end ;
+
+   ** remap payment model subset to HHS HCCs & CCs with different numbering **;
+   do i=1 to dim(_HCC_PM);
+    _HHS_HCC_PM(i)=_HCC_PM(i);
+    _HHS_CC_PM(i) =_CC_PM(i);
+   end;
+
+   **========================================================================**;
+   ** enrollee validity filters - note these are performed LAST              **;
+   **========================================================================**;
+   DeleteRecord=0;
+
+   ** confirm values, bypass enrollee if not compliant with every filter **;
+   if missing(&IDVAR) then do;
+    &MSG18 put "WARNING: [Msg18] Missing &IDVAR, enrollee rejected " @71 &IDVAR=;
+    DeleteRecord=1;
+   end;
+
+   ** M/1 and F/2 are valid, upcase is forced above **;
+   if not(SEX in("M","F","1","2")) then do;
+    &MSG19 put "WARNING: [Msg19] Invalid SEX, enrollee rejected " @71 &IDVAR= SEX=;
+    DeleteRecord=1;
+   end;
+
+   if missing(DOB) then do;
+    &MSG20 put "WARNING: [Msg20] Invalid DOB, enrollee rejected " @71 &IDVAR= OriginalDOB=;
+    DeleteRecord=1;
+   end;
+
+   if (AGE_LAST ne int(AGE_LAST)) or (AGE_LAST < 0) then do;
+    &MSG21 put "WARNING: [Msg21] Invalid AGE_LAST, enrollee rejected " @71 &IDVAR= AGE_LAST=;
+    DeleteRecord=1;
+   end;
+
+   ** enrollee metal level: plat, gold, silv, bron, cata, already upcased **;
+   if not(METAL in("P","G","S","B","C")) then do;
+    &MSG22 put "WARNING: [Msg22] Invalid METAL, enrollee rejected " @71 &IDVAR= METAL=;
+    DeleteRecord=1;
+   end;
+
+   ** enrollee cost sharing reduction indicator **;
+   if not(CSR_INDICATOR in(0,1,2,3,4,5,6,7,8,9,10,11,12,13)) then do;
+    &MSG23 put "WARNING: [Msg23] Invalid CSR_INDICATOR, enrollee rejected " @71 &IDVAR= 
+      CSR_INDICATOR=;
+    DeleteRecord=1;
+   end;
+
+   ** enrollee months of coverage **;
+   if not(ENROLDURATION in(1,2,3,4,5,6,7,8,9,10,11,12)) then do;
+    &MSG33 put "WARNING: [Msg33] Invalid ENROLDURATION, enrollee rejected " @71 &IDVAR= 
+      ENROLDURATION=;
+    DeleteRecord=1;
+   end;
+
+   ** HHS HCCs must be 0/1 **;
+   BadHCC=0;
+   do i=1 to dim(_HHS_HCC_PM);
+    if _HHS_HCC_PM(i) not in(0,1) then do;
+     BadHCC=1;
+     leave;
+    end;
+   end;
+   if BadHCC=1 then do;
+    &MSG24 put "WARNING: [Msg24] Failed HHS HCC filter, enrollee rejected " @71 &IDVAR=;
+    DeleteRecord=1;
+   end;
+
+   ** FLAG adults/children with both completed pregnancy & newborn recs    **;
+   ** to warn of an enrollee having a mix of mother & infant records       **;
+   ** this only traps ONE diagnosis so DIAG code is not printed            **;
+   if ((AGE_LAST >= 2) and 
+       (HHS_HCC207=1 or HHS_HCC208=1 or HHS_HCC209=1) and 
+       (ICD10Newborn=1)) then do;
+    &MSG25 put "WARNING: [Msg25] Possible bundled mother/infant claim(s) -- mother" 
+      @71 &IDVAR= AGE_LAST= HHS_HCC207= HHS_HCC208= HHS_HCC209= /*ICD10NewbornDiag=*/;
+    ** this does NOT set DeleteRecord to 1 **;
+   end;
+
+   ** FLAG infants with both completed pregnancy & newborn recs            **;
+   ** to warn of an enrollee having a mix of mother & infant records       **;
+   ** this only traps ONE diagnosis so DIAG code is not printed            **;
+   if ((AGE_LAST < 2) and 
+       (HHS_HCC242=1 or HHS_HCC243=1 or HHS_HCC244=1 or HHS_HCC245=1 or HHS_HCC246=1 or 
+        HHS_HCC247=1 or HHS_HCC248=1 or HHS_HCC249=1) and 
+       (ICD10Newborn=2)) then do;
+    &MSG25 put "WARNING: [Msg25] Possible bundled mother/infant claim(s) -- infant" 
+      @71 &IDVAR= AGE_LAST= HHS_HCC242= HHS_HCC243= HHS_HCC244= HHS_HCC245= 
+      HHS_HCC246= HHS_HCC247= HHS_HCC248= HHS_HCC249= /*ICD10NewbornDiag=*/;
+    ** this does NOT set DeleteRecord to 1 **;
+   end;
+ 
+   ** continue if compliant with all validity filters **;
+   if DeleteRecord=0;
+
+   **========================================================================**;
+   ** ADULT enrollee scores                                                  **;
+   **========================================================================**;
+   if AGE_LAST >= 21 then do;
+    %GENERATE_ADULT_VARIABLES;
+    %SCOREV4(ADULT);
+   end;
+
+   **========================================================================**;
+   ** CHILD enrollee scores                                                  **;
+   **========================================================================**;
+   else if 2 <= AGE_LAST <=  20 then do;
+    %GENERATE_CHILD_VARIABLES;
+    %SCOREV4(CHILD);
+   end;
+
+   **========================================================================**;
+   ** INFANT enrollee scores                                                 **;
+   **========================================================================**;
+   else if 0 <= AGE_LAST <=  1 then do;
+    %GENERATE_INFANT_VARIABLES;
+    %SCOREV4(INFANT);
+   end;
+
+   ** count HCCs **;
+   NumberOfHCCs=0;
+   do i=1 to dim(_HHS_HCC_PM);
+    if _HHS_HCC_PM(i)=1 then NumberOfHCCs+1;
+   end;
+
+   ** write ONE record per enrollee **;
+   output &OUTDATA;
+
+  end; /*if last.IDVAR*/
+
+ end; /*if InPerson*/
+
+ **==========================================================================**;
+ ** variable formats                                                         **;
+ **==========================================================================**;
+ format SCORE: CSR_: comma9.3 CSR_INDICATOR 2. DOB DIAGNOSIS_SERVICE_DATE date9.;
+
+ **==========================================================================**;
+ ** variable labels                                                          **;
+ **==========================================================================**;
+ label
+  &IDVAR                     = "Unique enrollee identifier"
+  SEX                        = "Sex ([1 or M]ale, [2 or F]emale)"
+  SEX_1_2                    = "Sex (1=male, 2=female)"
+  DOB                        = "Enrollee`s date of birth"
+  OriginalDOB                = "Enrollee`s date of birth (as input)"
+  AGE_LAST =
+    "Age (in integer years) as of last day of enrollment in benefit year"
+  METAL = 
+    "Enrollee plan level: P[lat.], G[old], S[ilver], B[ronze], C[atastroph.]"
+  CSR_INDICATOR =
+    "Enrollees qualified for cost-sharing reductions have values 1-10, else 0"
+  ENROLDURATION = 
+    "Enrollees months of coverage (1-12)"
+
+  CSR_ADJ_SCR_ADULT =
+    "Adult enrollee`s cost-sharing reduction adjusted risk score"
+  CSR_ADJ_SCR_CHILD =
+    "Child enrollee`s cost-sharing reduction adjusted risk score"
+  CSR_ADJ_SCR_INFANT =
+    "Infant enrollee`s cost-sharing reduction adjusted risk score"
+
+  CSR_ADJ_SCR_ADULT_PLATINUM =
+    "Adult platinum enrollee`s cost-sharing reduction adjusted risk score"
+  CSR_ADJ_SCR_ADULT_GOLD =
+    "Adult gold enrollee`s cost-sharing reduction adjusted risk score"
+  CSR_ADJ_SCR_ADULT_SILVER =
+    "Adult silver enrollee`s cost-sharing reduction adjusted risk score"
+  CSR_ADJ_SCR_ADULT_BRONZE =
+    "Adult bronze enrollee`s cost-sharing reduction adjusted risk score"
+  CSR_ADJ_SCR_ADULT_CATASTROPHIC =
+    "Adult catastrophic enrollee`s cost-sharing reduction adjusted risk score"
+
+  CSR_ADJ_SCR_CHILD_PLATINUM =
+    "Child platinum enrollee`s cost-sharing reduction adjusted risk score"
+  CSR_ADJ_SCR_CHILD_GOLD =
+    "Child gold enrollee`s cost-sharing reduction adjusted risk score"
+  CSR_ADJ_SCR_CHILD_SILVER =
+    "Child silver enrollee`s cost-sharing reduction adjusted risk score"
+  CSR_ADJ_SCR_CHILD_BRONZE =
+    "Child bronze enrollee`s cost-sharing reduction adjusted risk score"
+  CSR_ADJ_SCR_CHILD_CATASTROPHIC =
+    "Child catastrophic enrollee`s cost-sharing reduction adjusted risk score"
+
+  CSR_ADJ_SCR_INFANT_PLATINUM =
+    "Infant platinum enrollee`s cost-sharing reduction adjusted risk score"
+  CSR_ADJ_SCR_INFANT_GOLD =
+    "Infant gold enrollee`s cost-sharing reduction adjusted risk score"
+  CSR_ADJ_SCR_INFANT_SILVER =
+    "Infant silver enrollee`s cost-sharing reduction adjusted risk score"
+  CSR_ADJ_SCR_INFANT_BRONZE =
+    "Infant bronze enrollee`s cost-sharing reduction adjusted risk score"
+  CSR_ADJ_SCR_INFANT_CATASTROPHIC =
+    "Infant catastroph. enrollee`s cost-sharing reduction adjusted risk score"
+
+  SCORE_ADULT                = "Adult enrollee`s risk score"
+  SCORE_CHILD                = "Child enrollee`s risk score"
+  SCORE_INFANT               = "Infant enrollee`s risk score"
+
+  SCORE_ADULT_PLATINUM       = "Adult platinum enrollee`s risk score"
+  SCORE_ADULT_GOLD           = "Adult gold enrollee`s risk score"
+  SCORE_ADULT_SILVER         = "Adult silver enrollee`s risk score"
+  SCORE_ADULT_BRONZE         = "Adult bronze enrollee`s risk score"
+  SCORE_ADULT_CATASTROPHIC   = "Adult catastrophic enrollee`s risk score"
+
+  SCORE_CHILD_PLATINUM       = "Child platinum enrollee`s risk score"
+  SCORE_CHILD_GOLD           = "Child gold enrollee`s risk score"
+  SCORE_CHILD_SILVER         = "Child silver enrollee`s risk score"
+  SCORE_CHILD_BRONZE         = "Child bronze enrollee`s risk score"
+  SCORE_CHILD_CATASTROPHIC   = "Child catastrophic enrollee`s risk score"
+
+  SCORE_INFANT_PLATINUM      = "Infant platinum enrollee`s risk score"
+  SCORE_INFANT_GOLD          = "Infant gold enrollee`s risk score"
+  SCORE_INFANT_SILVER        = "Infant silver enrollee`s risk score"
+  SCORE_INFANT_BRONZE        = "Infant bronze enrollee`s risk score"
+  SCORE_INFANT_CATASTROPHIC  = "Infant catastroph. enrollee`s risk score"
+
+  NumberOfHCCs               = "Number of non-zero HCCs"
+
+  FAGE_LAST_0_0              = "Female,  0 <= AGE_LAST <=  0"
+  FAGE_LAST_1_1              = "Female,  1 <= AGE_LAST <=  1"
+  FAGE_LAST_2_4              = "Female,  2 <= AGE_LAST <=  4"
+  FAGE_LAST_5_9              = "Female,  5 <= AGE_LAST <=  9"     
+  FAGE_LAST_10_14            = "Female, 10 <= AGE_LAST <= 14"          
+  FAGE_LAST_15_20            = "Female, 15 <= AGE_LAST <= 20"          
+  FAGE_LAST_21_24            = "Female, 21 <= AGE_LAST <= 24"          
+  FAGE_LAST_25_29            = "Female, 25 <= AGE_LAST <= 29"  
+  FAGE_LAST_30_34            = "Female, 30 <= AGE_LAST <= 34"          
+  FAGE_LAST_35_39            = "Female, 35 <= AGE_LAST <= 39"          
+  FAGE_LAST_40_44            = "Female, 40 <= AGE_LAST <= 44"          
+  FAGE_LAST_45_49            = "Female, 45 <= AGE_LAST <= 49"          
+  FAGE_LAST_50_54            = "Female, 50 <= AGE_LAST <= 54"          
+  FAGE_LAST_55_59            = "Female, 55 <= AGE_LAST <= 59"          
+  FAGE_LAST_60_GT            = "Female, 60 <= AGE_LAST      "    
+
+  MAGE_LAST_0_0              = "Male,    0 <= AGE_LAST <=  0"
+  MAGE_LAST_1_1              = "Male,    1 <= AGE_LAST <=  1"
+  MAGE_LAST_2_4              = "Male,    2 <= AGE_LAST <=  4"
+  MAGE_LAST_5_9              = "Male,    5 <= AGE_LAST <=  9"     
+  MAGE_LAST_10_14            = "Male,   10 <= AGE_LAST <= 14"          
+  MAGE_LAST_15_20            = "Male,   15 <= AGE_LAST <= 20"          
+  MAGE_LAST_21_24            = "Male,   21 <= AGE_LAST <= 24"          
+  MAGE_LAST_25_29            = "Male,   25 <= AGE_LAST <= 29"  
+  MAGE_LAST_30_34            = "Male,   30 <= AGE_LAST <= 34"          
+  MAGE_LAST_35_39            = "Male,   35 <= AGE_LAST <= 39"          
+  MAGE_LAST_40_44            = "Male,   40 <= AGE_LAST <= 44"          
+  MAGE_LAST_45_49            = "Male,   45 <= AGE_LAST <= 49"          
+  MAGE_LAST_50_54            = "Male,   50 <= AGE_LAST <= 54"          
+  MAGE_LAST_55_59            = "Male,   55 <= AGE_LAST <= 59"          
+  MAGE_LAST_60_GT            = "Male,   60 <= AGE_LAST      "   
+  Age0_Male                  = "Male, AGE_LAST = 0          " 
+  Age1_Male                  = "Male, AGE_LAST = 1          " 
+
+  AGE_AT_DIAGNOSIS                   = "Age (in FLOOR integer years) when diagnosis was collected"
+  DIAG                               = "ICD-10 diagnosis code"
+  DIAGNOSIS_SERVICE_DATE             = "Date diagnosis was collected"
+  OriginalDIAGNOSIS_SERVICE_DATE     = "Date diagnosis was collected (as input)"     
+
+  Extremely_Immature_x_Severity5     = "1 if IHCC_Severity5 and IHCC_Extremely_Immature, else 0"
+  Immature_x_Severity5               = "1 if IHCC_Severity5 and IHCC_Immature, else 0"
+  Premature_Multiples_x_Severity5    = "1 if IHCC_Severity5 and IHCC_Premature_Multiples, else 0"
+  Term_x_Severity5                   = "1 if IHCC_Severity5 and IHCC_Term, else 0"
+  Age1_x_Severity5                   = "1 if IHCC_Severity5 and IHCC_Age1, else 0"
+  Extremely_Immature_x_Severity4     = "1 if IHCC_Severity4 and IHCC_Extremely_Immature, else 0"
+  Immature_x_Severity4               = "1 if IHCC_Severity4 and IHCC_Immature, else 0"
+  Premature_Multiples_x_Severity4    = "1 if IHCC_Severity4 and IHCC_Premature_Multiples, else 0"
+  Term_x_Severity4                   = "1 if IHCC_Severity4 and IHCC_Term, else 0"
+  Age1_x_Severity4                   = "1 if IHCC_Severity4 and IHCC_Age1, else 0"
+  Extremely_Immature_x_Severity3     = "1 if IHCC_Severity3 and IHCC_Extremely_Immature, else 0"
+  Immature_x_Severity3               = "1 if IHCC_Severity3 and IHCC_Immature, else 0"
+  Premature_Multiples_x_Severity3    = "1 if IHCC_Severity3 and IHCC_Premature_Multiples, else 0"
+  Term_x_Severity3                   = "1 if IHCC_Severity3 and IHCC_Term, else 0"
+  Age1_x_Severity3                   = "1 if IHCC_Severity3 and IHCC_Age1, else 0"
+  Extremely_Immature_x_Severity2     = "1 if IHCC_Severity2 and IHCC_Extremely_Immature, else 0"
+  Immature_x_Severity2               = "1 if IHCC_Severity2 and IHCC_Immature, else 0"
+  Premature_Multiples_x_Severity2    = "1 if IHCC_Severity2 and IHCC_Premature_Multiples, else 0"
+  Term_x_Severity2                   = "1 if IHCC_Severity2 and IHCC_Term, else 0"
+  Age1_x_Severity2                   = "1 if IHCC_Severity2 and IHCC_Age1, else 0"
+  Extremely_Immature_x_Severity1     = "1 if IHCC_Severity1 and IHCC_Extremely_Immature, else 0"
+  Immature_x_Severity1               = "1 if IHCC_Severity1 and IHCC_Immature, else 0"
+  Premature_Multiples_x_Severity1    = "1 if IHCC_Severity1 and IHCC_Premature_Multiples, else 0"
+  Term_x_Severity1                   = "1 if IHCC_Severity1 and IHCC_Term, else 0"
+  Age1_x_Severity1                   = "1 if IHCC_Severity1 and IHCC_Age1, else 0"
+
+  IHCC_Extremely_Immature            = "Infant maturity level - extremely immature "
+  IHCC_Immature                      = "Infant maturity level - immature           "
+  IHCC_Premature_Multiples           = "Infant maturity level - premature multiples"
+  IHCC_Term                          = "Infant maturity level - term               "
+  IHCC_Age1                          = "Infant maturity level - age 1              "
+      
+  IHCC_Severity5                     = "Highest infant HCC severity level        - 5"      
+  IHCC_Severity4                     = "Second highest infant HCC severity level - 4"     
+  IHCC_Severity3                     = "Middle infant HCC severity level         - 3"     
+  IHCC_Severity2                     = "Second lowest infant HCC severity level  - 2"     
+  IHCC_Severity1                     = "Lowest infant HCC severity level         - 1"   
+
+  SEVERE_V3                          = "Adult severe illness 0/1 marker"
+  SEVERE_V3_x_G03                    = "1 if adult severe illness and group G03, else 0"
+  SEVERE_V3_x_G06                    = "1 if adult severe illness and group G06, else 0"
+  SEVERE_V3_x_G08                    = "1 if adult severe illness and group G08, else 0"
+  SEVERE_V3_x_HHS_HCC006             = "1 if adult severe illness and HHS_HCC006, else 0"
+  SEVERE_V3_x_HHS_HCC008             = "1 if adult severe illness and HHS_HCC008, else 0"
+  SEVERE_V3_x_HHS_HCC009             = "1 if adult severe illness and HHS_HCC009, else 0"
+  SEVERE_V3_x_HHS_HCC010             = "1 if adult severe illness and HHS_HCC010, else 0"
+  SEVERE_V3_x_HHS_HCC035             = "1 if adult severe illness and HHS_HCC035, else 0"
+  SEVERE_V3_x_HHS_HCC038             = "1 if adult severe illness and HHS_HCC038, else 0"
+  SEVERE_V3_x_HHS_HCC115             = "1 if adult severe illness and HHS_HCC115, else 0"
+  SEVERE_V3_x_HHS_HCC135             = "1 if adult severe illness and HHS_HCC135, else 0"
+  SEVERE_V3_x_HHS_HCC145             = "1 if adult severe illness and HHS_HCC145, else 0"
+  SEVERE_V3_x_HHS_HCC153             = "1 if adult severe illness and HHS_HCC153, else 0"
+  SEVERE_V3_x_HHS_HCC154             = "1 if adult severe illness and HHS_HCC154, else 0"
+  SEVERE_V3_x_HHS_HCC163             = "1 if adult severe illness and HHS_HCC163, else 0"
+  SEVERE_V3_x_HHS_HCC253             = "1 if adult severe illness and HHS_HCC253, else 0"
+
+  INT_GROUP_H                        = "1 if adult high cost interaction, else 0"
+  INT_GROUP_M                        = "1 if adult medium cost interaction, else 0"
+
+  ED_1                               = "0/1 flag set if EnrolDuration equals 1"
+  ED_2                               = "0/1 flag set if EnrolDuration equals 2"
+  ED_3                               = "0/1 flag set if EnrolDuration equals 3"
+  ED_4                               = "0/1 flag set if EnrolDuration equals 4"
+  ED_5                               = "0/1 flag set if EnrolDuration equals 5"
+  ED_6                               = "0/1 flag set if EnrolDuration equals 6"
+  ED_7                               = "0/1 flag set if EnrolDuration equals 7"
+  ED_8                               = "0/1 flag set if EnrolDuration equals 8"
+  ED_9                               = "0/1 flag set if EnrolDuration equals 9"
+  ED_10                              = "0/1 flag set if EnrolDuration equals 10"
+  ED_11                              = "0/1 flag set if EnrolDuration equals 11"
+
+  RXC_01_x_HCC001                    = "Additional effect for enrollees with RXC 01 and HCC 001" 
+  RXC_02_x_HCC037_1_036_035_034      = "Additional effect for enrollees with RXC 02  and (HCC 037_1 or 036 or 035 or 034)" 
+  RXC_03_x_HCC142                    = "Additional effect for enrollees with RXC 03 and HCC 142" 
+  RXC_04_x_HCC184_183_187_188        = "Additional effect for enrollees with RXC 04  and (HCC 184 or 183 or 187 or 188)" 
+  RXC_05_x_HCC048_041                = "Additional effect for enrollees with RXC 05 and (HCC 048 or 041)" 
+  RXC_06_x_HCC018_019_020_021        = "Additional effect for enrollees with RXC 06  and (HCC 018 or 019 or 020 or 021)" 
+  RXC_07_x_HCC018_019_020_021        = "Additional effect for enrollees with RXC 07  and (HCC 018 or 019 or 020 or 021)" 
+  RXC_08_x_HCC118                    = "Additional effect for enrollees with RXC 08 and HCC 118" 
+  RXC_09_x_HCC056_057_and_048_041    = "Additional effect for enrollees with RXC 09 and (HCC 048 or 041) and (HCC 056 or 057)" 
+  RXC_09_x_HCC056                    = "Additional effect for enrollees with RXC 09 and HCC 056" 
+  RXC_09_x_HCC057                    = "Additional effect for enrollees with RXC 09 and HCC 057" 
+  RXC_09_x_HCC048_041                = "Additional effect for enrollees with RXC 09 and (HCC 048 or 041)" 
+  RXC_10_x_HCC159_158                = "Additional effect for enrollees with RXC 10 and (HCC 159 or 158)" 
+  RXC_11_x_HCC036_035_034            = "Additional effect for enrollees with RXC 11  and (HCC 036 or 035 or 034)" 
+  RXC_12_x_HCC130_129_128            = "Additional effect for enrollees with RXC 12  and (HCC 130 or 129 or 128)" 
+
+  BadHCC                = "0/1 flag set if HCC remapping failed"  
+  DeleteRecord          = "0/1 flag set if enrollee record is to be rejected"  
+  DeltaAge              = "Used to test out-of-range condition, DOB vs. AGE_AT_DIAGNOSIS"  
+  I                     = "Utility array index"  
+  K                     = "Utility array index"  
+  ICD10Newborn          = "0/1 flag set if bundled claim indicated"  
+  ICD10NewbornDiag      = "Diagnosis when bundled claim indicated"  
+  _tage                 = "Utility variable"  
+  _tsex                 = "Utility variable"  
+  CC                    = "Utility variable, array pointer"  
+  IND                   = "Utility variable";
+
+ /* HHS HCC and RXC labels */
+ %V05128L1;
+
+ ** labels for 343 x 5 = 1715 calibration coefficients read from coefficients dataset **;
+ ** and other utility variables that can be references by a macro or range            **;
+ attrib 
+  %ALL_COEFFICIENTS_LIST 
+   label="Calibration coefficient from coefficients dataset, length must be 8"
+  %HCC_FULL_LIST
+   label="Utility 0/1 variable, length can be 3"
+  %CC_FULL_LIST
+   label="Utility 0/1 variable, length can be 3"
+  G01-G04 G06-G18 G02A
+   label="Utility 0/1 variable, length can be 3";
+run;
+
+**==========================================================================**;
+** contents and data dump                                                   **;
+**==========================================================================**;
+title2 "Output to SAS dataset &outdata";
+title3 " ";
+
+proc contents order=ignorecase data=&OUTDATA; run;
+
+proc print heading=h u data=&OUTDATA(obs=5); 
+ id &IDVAR;
+ var &KEEPVAR; run;
+
+ %mend V0518F3M;

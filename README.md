@@ -96,27 +96,26 @@ To get a HCC profile from a list of diagnosis codes (in ICD-10):
 >>> rp = he.profile(["E1169", "I5030", "I509", "I211", "I209", "R05"])
 >>> print(json.dumps(rp, indent=2))
 {
-  "risk_score": 1.314,
+  "risk_score": 1.3139999999999998,
   "details": {
     "CNA_M70_74": 0.379,
     "CNA_HCC85": 0.323,
-    "CNA_HCC18": 0.318,
     "CNA_HCC88": 0.14,
+    "CNA_HCC18": 0.318,
     "CNA_HCC85_gDiabetesMellit": 0.154,
     "CNA_DIABETES_CHF": 0.0
   },
   "hcc_lst": [
     "HCC85",
-    "HCC18",
-    "HCC88"
-  ],
-  "ihcc_lst": [
-    "HCC85",
-    "HCC18",
     "HCC88",
-    "HCC85_gDiabetesMellit",
-    "DIABETES_CHF"
+    "HCC18"
   ],
+  "hcc_map": {
+    "I5030": "HCC85",
+    "I209": "HCC88",
+    "E1169": "HCC18",
+    "I509": "HCC85"
+  },
   "parameters": {
     "age": 70,
     "sex": "M",
@@ -142,7 +141,7 @@ If a member is new, then provide the `elig="NE"` in the input:
     "NE_NMCAID_NORIGDIS_NEM65": 0.514
   },
   "hcc_lst": [],
-  "ihcc_lst": [],
+  "hcc_map": {},
   "parameters": {
     "age": 65,
     "sex": "M",
@@ -163,27 +162,26 @@ If a member has a different eligibility status, change the eligibility as follow
 >>> rp = he.profile(["E1169", "I5030", "I509", "I209"], elig="INS")
 >>> print(json.dumps(rp, indent=2))
 {
-  "risk_score": 2.606,
+  "risk_score": 2.6059999999999994,
   "details": {
     "INS_M70_74": 1.323,
-    "INS_HCC85": 0.191,
     "INS_HCC88": 0.497,
     "INS_HCC18": 0.441,
+    "INS_HCC85": 0.191,
     "INS_HCC85_gDiabetesMellit": 0.0,
     "INS_DIABETES_CHF": 0.154
   },
   "hcc_lst": [
-    "HCC85",
-    "HCC88",
-    "HCC18"
-  ],
-  "ihcc_lst": [
-    "HCC85",
     "HCC88",
     "HCC18",
-    "HCC85_gDiabetesMellit",
-    "DIABETES_CHF"
+    "HCC85"
   ],
+  "hcc_map": {
+    "I209": "HCC88",
+    "E1169": "HCC18",
+    "I509": "HCC85",
+    "I5030": "HCC85"
+  },
   "parameters": {
     "age": 70,
     "sex": "M",
@@ -247,5 +245,5 @@ Apache 2.0
 - https://github.com/AlgorexHealth/hcc-python
 - https://github.com/galtay/hcc_risk_models
 - https://www.cms.gov/cciio/resources/forms-reports-and-other-resources/downloads/ra-march-31-white-paper-032416.pdf
-
+- https://www.cms.gov/cciio/resources/regulations-and-guidance/index.html
 

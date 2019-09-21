@@ -1,42 +1,46 @@
 import numpy as np
 from collections import Counter
-import hccpy.utils as utils
-import hccpy._V22I0ED2 as V22I0ED2 # age sex edits (v22, v23,  v24)
-import hccpy._V2218O1M as V2218O1M # interactions (v22)
-import hccpy._V2318P1M as V2318P1M # interactions (v23)
-import hccpy._V2419P1M as V2419P1M # interactions (v24)
-import hccpy._AGESEXV2 as AGESEXV2 # disabled/origds (v22, v23, v24)
-import hccpy._V2218O1P as V2218O1P # risk coefn (v22, v23, v24)
+import hccpy.utils_hhs as utils
+import hccpy._AGESEXV6 as AGESEXV6 # age/sex variables
+import hccpy._I0V05ED2 as I0V05ED2 # age/sex edits
 
-class HCCEngine:
+#import hccpy._V2218O1M as V2218O1M # interactions (v22)
+#import hccpy._V2318P1M as V2318P1M # interactions (v23)
+#import hccpy._V2419P1M as V2419P1M # interactions (v24)
+#import hccpy._V2218O1P as V2218O1P # risk coefn (v22, v23, v24)
 
-    def __init__(self, version="22", year="2019"):
+class HHSHCCEngine:
+
+    def __init__(self, myear="2019"):
+        
         fnmaps = {
-                "22": {
+                "2019": {
                     "dx2cc": "data/F2218O1P.TXT",
                     "coefn": "data/V22hcccoefn.csv",
                     "label": "data/V22H79L1.TXT",
                     "hier": "data/V22H79H1.TXT"
-                },
-                "23": {
-                    "dx2cc": "data/F2318P1Q.TXT",
-                    "coefn": "data/V23hcccoefn.csv",
-                    "label": "data/V23H83L2.TXT",
-                    "hier": "data/V23H83H1.TXT"
-                },
-                "24": {
-                    "dx2cc": "data/F2419P1M.TXT",
-                    "coefn": "data/V23hcccoefn.csv", # NOTE: V24 not yet
-                    "label": "data/V24H86L1.TXT",
-                    "hier": "data/V24H86H1.TXT"
                 }
-
             }
-        self.version = version
-        self.dx2cc = utils.read_dx2cc(fnmaps[version]["dx2cc"])
-        self.coefn = utils.read_coefn(fnmaps[version]["coefn"])
-        self.label = utils.read_label(fnmaps[version]["label"])
-        self.hier = utils.read_hier(fnmaps[version]["hier"])
+        #data = read_dx2cc("data/H0519F3.FY 2019 ICD10.TXT")
+        #print(data)
+        #ndc2rxc = read_code2rxc("data/H0519F3_NDC.4_4.1812.TXT")
+        #print(ndc2rxc)
+        #hcpcs2rxc = read_code2rxc("data/H0519F3_HCPCS.4_4.1812.TXT")
+        #print(hcpcs2rxc)
+
+        #hier = read_hier("data/V05128H1.TXT")
+        #print(hier)
+        #labels = read_label("data/V05128L1.TXT")
+        #import json
+        #print(json.dumps(labels, indent=2, sort_keys=True))
+
+        self.myear = myear
+        self.dx2cc = utils.read_dx2cc(fnmaps[myear]["dx2cc"])
+        self.ndc2rxc = utils.read_code2rxc(fnmaps[myear]["ndc2rxc"])
+        self.hcpcs2rxc = utils.read_code2rxc(fnmaps[myear]["hcpcs2rxc"])
+        self.coefn = utils.read_coefn(fnmaps[myear]["coefn"])
+        self.label = utils.read_label(fnmaps[myear]["label"])
+        self.hier = utils.read_hier(fnmaps[myear]["hier"])
 
     def _apply_hierarchy(self, cc_dct, age, sex):
         """Returns a list of HCCs after applying hierarchy and age/sex edit
@@ -123,6 +127,7 @@ class HCCEngine:
                 "details": risk_dct,
                 "hcc_lst": hcc_lst,    # HCC list before interactions
                 "hcc_map": cc_dct,     # before applying hierarchy
+                #"ihcc_lst": ihcc_lst,   # after applying interactions
                 "parameters": {
                     "age": age,
                     "sex": sex,

@@ -1,0 +1,320 @@
+*******************************************************************************;
+* This distribution is:       V0519.128.P1, June 2019
+*******************************************************************************;
+
+*******************************************************************************
+*For z/OS mainframe, use the following guide:
+*
+*//JOBCARD JOB etc.
+*//HHSHCC EXEC SAS9,REGION=8M,
+*// OPTIONS='ERRORS=0,NOCENTER,NEWS'
+*//WORK  DD SPACE=(CYL,(1000,2))
+*//WORK1 DD SPACE=(CYL,(2000,2))
+*//LIBRARY DD DISP=SHR,DSN=XX.FORMATS.LIBRARY /*location of formats*/
+*//IN0 DD DISP=SHR,DSN=XX.MACROS      /*location of external macros*/
+*//IN1 DD DISP=SHR,DSN=XX.PERSON      /*location of person-level SAS dataset*/
+*//IN2 DD DISP=SHR,DSN=XX.DIAG        /*location of diagnosis SAS dataset*/ 
+*//IN3 DD DISP=SHR,DSN=XX.NDC         /*location of NDC SAS dataset*/ 
+*//IN4 DD DISP=SHR,DSN=XX.HCPCS       /*location of HCPCS SAS dataset*/ 
+*//INCOEF DD DISP=SHR,DSN=XX.COEFF    /*location of coefficients SAS dataset*/
+*//OUT DD DISP=(NEW,CATLG,KEEP),      /*output SAS dataset, person-level scores*/
+*//    DSN=XX.PERSON.OUTPUT, 
+*//    SPACE=(TRK,(200,10),RLSE)
+*//SYSIN  DD *
+*
+*******************************************************************************
+*For MS Windows, Linux, Unix, use the following guide;
+*;
+
+LIBNAME  LIBRARY "location of formats";
+FILENAME IN0     "location of external macros"; 
+LIBNAME  IN1     "location of person-level SAS dataset";
+LIBNAME  IN2     "location of diagnosis SAS dataset";
+LIBNAME  IN3     "location of NDC SAS dataset";
+LIBNAME  IN4     "location of HCPCS SAS dataset";
+LIBNAME  INCOEF  "location of coefficients SAS dataset";
+LIBNAME  OUT     "output SAS dataset of person-level scores";
+
+dm "out;clear;log;clear;";
+
+options linesize=132 errors=30 center pagesize=50 msglevel=I pageno=1
+ formchar="|=|-/\+>*" nodate nomprint missing=".";
+
+options dkricond=error dkrocond=error;
+
+%let runday=%sysfunc(today(),date9.);
+%let runtime=%sysfunc(time(),hhmm7.);
+%let PROGRAM=%str(V0519F3P.SAS);
+
+options compress=YES;
+
+options dsoptions=nonote2err; run;
+
+options obs=max;
+
+title "&runday at &runtime, Pgm: &PROGRAM";
+footnote;
+
+ ***********************************************************************
+ * 
+ * Program V0519F3P creates 128 0/1 payment model HHS HCC variables,
+ * 10 RXC variables, and a set of score variables for each enrollee 
+ * in the PERSON SAS dataset (provided by the user).
+ *
+ * If an enrollee has at least one diagnosis in the DIAG SAS dataset
+ * (provided by the user) then HHS HCC variables are created otherwise
+ * HHS HCCs are set to 0 for the enrollee.  If an enrollee has at least 
+ * one NDC in the NDC SAS dataset (provided by the user), or at least one 
+ * valid code in the HCPCS file (provided by the user) then RXC variables 
+ * are created otherwise RXCs are set to 0 for the enrollee. If HHS 
+ * HCC variables and RXC variables are both set to 0 the score variables are based
+ * on demographic variables (e.g., age, sex) and/or defaults.
+ *
+ * Score variables are created using calibration coefficients from three
+ * models (Adult, Child, Infant), each with five `metal` levels
+ * (Platinum, Gold, Silver, Bronze, Catastrophic):
+ *
+ *    1) Adult  Platinum        (AP)
+ *    2) Adult  Gold            (AG)
+ *    3) Adult  Silver          (AS)
+ *    4) Adult  Bronze          (AB)
+ *    5) Adult  Catastrophic    (AC)
+ *
+ *    6) Child  Platinum        (CP)
+ *    7) Child  Gold            (CG)
+ *    8) Child  Silver          (CS)
+ *    9) Child  Bronze          (CB)
+ *   10) Child  Catastrophic    (CC)
+ *
+ *   11) Infant Platinum        (IP)
+ *   12) Infant Gold            (IG)
+ *   13) Infant Silver          (IS)
+ *   14) Infant Bronze          (IB)
+ *   15) Infant Catastrophic    (IC).
+ *
+ * ICD-10-CM diagnosis codes are accepted in this version. 
+ *
+ * All the input SAS datasets, PERSON, DIAG, HCPCS and NDC, must be ordered by enrollee ID, i.e.,
+ * the user must ensure that each dataset is sorted by the common identifier.
+ * The PERSON dataset must not contain duplicate enrollee IDs. The enrollee ID 
+ * is named in the user-provided macro variable &IDVAR.
+ *
+ * The PERSON SAS dataset must contain the following variables and values:
+ *  &IDVAR        - unique enrollee ID (e.g., Medicare HICNO), character or numeric,
+ *                   any valid length, not missing, no duplicates
+ *  DOB           - date of birth, numeric, yyyymmdd, valid calendar date
+ *  AGE_LAST      - age as of last day of enrollment in benefit year, numeric, 0/1/2/...
+ *  SEX           - sex, character, M/F/m/f/1/2, if lower case automatically converted
+ *  METAL         - enrollee`s plan level, character, P/G/S/B/C/p/g/s/b/c, if lower case 
+ *                   automatically converted
+ *  CSR_INDICATOR - cost sharing reduction indicator, numeric, 0/1/2/3/4/5/6/7/8/9/10/11/12/13
+ *  ENROLDURATION - number of months enrollee was in plan (1 to 12)
+ *
+ * The DIAG SAS dataset must contain the following variables and values:
+ *  &IDVAR        - unique enrollee ID (e.g., Medicare HICNO), character or numeric,
+ *                   any valid length, not missing
+ *  DIAG          - ICD-10-CM diagnosis, character, 3-8 bytes, no decimal point, no
+ *                   embedded blanks in code, if lower case automatically converted
+ *  DIAGNOSIS_SERVICE_DATE - date of diagnosis, numeric, yyyymmdd, valid calendar date
+ *
+ *  If an enrollee has N diagnoses, s/he will have N records in the DIAG dataset. If an
+ *  enrollee has no diagnoses, s/he will have zero records in the DIAG dataset.
+ *
+ *  AGE_AT_DIAGNOSIS, the age as of the diagnosis service date, is calculated by the 
+ *   software using DOB from the PERSON dataset and DIAGNOSIS_SERVICE_DATE from the  
+ *   DIAGNOSIS dataset. It is used only for MCE diagnosis code age edits.
+ *
+ * The NDC SAS dataset must contain the following variables and values:
+ *  &IDVAR        - unique enrollee ID (e.g., Medicare HICNO), character or numeric,
+ *                   any valid length, not missing
+ *  NDC           - NDC code, character 11 bytes, any valid format for NDC codes.
+ *
+ *  If an enrollee has N NDC codes, s/he will have N records in the NDC dataset. If an
+ *  enrollee has no NDC codes, s/he will have zero records in the NDC dataset.
+ *
+ * The HCPCS SAS dataset must contain the following variables and values:
+ *  &IDVAR        - unique enrollee ID (e.g., Medicare HICNO), character or numeric,
+ *                   any valid length, not missing
+ *  HCPCS         - HCPCS code, character 5 bytes, CPT coding format.
+ *
+ *  If an enrollee has N HCPC codes, s/he will have N records in the HCPCS dataset. If an
+ *  enrollee has no HCPC codes, s/he will have zero records in the HCPCS dataset.
+ *
+ * V0519F3P passes parameters to main macro V0519F3M, which calls various internal and
+ *    external macros. (A macro is a program fragment.) External macros are:
+ *  I0V05ED2 - ICD10 edits based on age and/or sex
+ *  AGESEXV6 - creates age/sex variables based on AGE_LAST
+ *  V05128L1 - assigns labels to HHS HCCs and RXCs
+ *  V05128H1 - sets selected HHS HCCs to zero based on hierarchical relationships
+ *  SCOREV4  - calculates score variables.
+ *
+ * A SAS format that maps ICD10s to CCs is required. The format is specified as
+ * parameter CCFMT0 (for ICD10) in the main macro call. A SAS format that maps
+ * NDCs to RXCs is required. The format is specified as parameter RXCFMTN in the 
+ * main macro call. A SAS format that maps HCPCS to RXCs is required. The format
+ * is specified as parameter RXCFMTH in the main macro call.
+ *
+ * Program steps: The program(s):
+ * Include external macros. The external macros are most likely to vary
+ *     among releases.
+ * Define internal macro variables, formats, internal macros. The
+ *     internal macros are least likely to vary among releases.
+ * Merge PERSON, DIAGnosis, NDC, and HCPCS datasets, and output one record for each
+ *     enrollee record in the PERSON dataset. Output records must be fully
+ *     compliant with validity rules (e.g., SEX must be M/m/F/f/1/2).
+ *     Exceptions are ignored. Warning messages are generated for some 
+ *     exceptions.
+ * Declare lengths, retained variables, arrays
+ * Append calibration coefficients
+ * Merge PERSON, DIAGnosis, NDC, and HCPCS datasets by &IDVAR
+ * If there are any diagnoses for an enrollee:
+ *   - perform ICD10 edits
+ *   - create additional (multiple) CCs for selected diagnoses
+ *   - create age/sex variables
+ *   - create RXC variables
+ *   - create HCCs with hierarchy rules
+ *   - set HCCs to zero if there are no diagnoses for enrollee 
+ *   - apply validity filters 
+ *   - create additional model-specific variables 
+ *   - create scores 
+ *   - define formats, labels. 
+ * Contents and data dump
+ *
+ * User inputs:
+ * The user provides four SAS datasets with the variables described above,
+ * each sorted by &IDVAR, and sets the following parameters in the macro call:
+ *  INP      - SAS input PERSON SAS dataset
+ *  IND      - SAS input DIAGnosis SAS dataset
+ *  INN      - SAS input NDC SAS dataset
+ *  INH      - SAS input HCPCS SAS dataset
+ *  OUTDATA  - SAS output SAS dataset
+ *  IDVAR    - name of enrollee ID variable (e.g., Medicare HICNO)
+ *  KEEPVAR  - variables in output dataset in addition to &IDVAR
+ *  CCFMT0Y1 - pointer to SAS formats that crosswalk ICD10s to HHS CCs for fiscal year 2019
+ *  CCFMT0Y2 - pointer to SAS formats that crosswalk ICD10s to HHS CCs for fiscal year 2019 
+               (placeholder for FY 2020)
+ *  RXCFMTN  - pointer to SAS formats that crosswalk NDC to RXC for calendar year 2019
+ *  RXCFMTH  - pointer to SAS formats that crosswalk HCPCS to RXC for calendar year 2019
+ *  AGEFMT0  - pointer to SAS formats that crosswalk ICD10s to acceptable 
+ *             age range in case age-related edits are to be performed
+ *  SEXFMT0  - pointer to SAS format that crosswalks ICD10s to acceptable 
+ *             sex in case sex-related edits are to be performed
+ *
+ * Platforms: software has been tested with SAS v9.4 on Linux (Intel server,
+ * Red Hat).
+ *
+ **********************************************************************;
+
+** housekeeping **;
+proc delete data=work._all_; run;
+
+**===========================================================================**;
+** global macro variables                                                    **;
+**===========================================================================**;
+%global CV YY0 YY1 YY2;
+
+** HHS HCC version, embedded in format names **;
+%let CV=05;
+
+** year, embedded in format names **;
+%let YY0=18; 
+%let YY1=19; 
+%let YY2=20; 
+
+** load and run primary macro **;
+%inc IN0("V0519F3M.SAS") / source2;
+
+**==========================================================================================**;
+** V0519F3M goes here when testing macros inline;
+**==========================================================================================**;
+
+**==============================================================================**;
+** print or suppress message -- (=blank) for print, (=*) for suppress           **;
+** these are errors/warnings/notes, and are typically not                       **;
+** suppressed (=blank) by the user                                              **;
+** E.g., to suppress message 14, change MSG14= to MSG14=*                       **;
+**==============================================================================**;
+
+%let MSG01= ; /*ERROR  : [Msg01] Variable --- is not in --- file                                               */ 
+%let MSG02= ; /*ERROR  : [Msg02] User-provided variable --- in --- file must be --- type                       */ 
+%let MSG03= ; /*ERROR  : [Msg03] Duplicate IDVARs in PERSON file                                               */ 
+%let MSG04= ; /*ERROR  : [Msg04] Program halted due to duplicate IDVARs in PERSON file                         */ 
+%let MSG05= ; /*OK     : [Msg05] PERSON file is free of duplicate IDVARs                                       */ 
+%let MSG06= ; /*ERROR  : [Msg06] Program halted due to non-existent variable(s) in PERSON file                 */ 
+%let MSG07= ; /*OK     : [Msg07] PERSON file contains all requisite variables                                  */ 
+%let MSG08= ; /*ERROR  : [Msg08] Program halted due to incorrect user-provided variable type(s) in PERSON file */ 
+%let MSG09= ; /*OK     : [Msg09] PERSON file`s variables have the correct type                                 */ 
+%let MSG10= ; /*ERROR  : [Msg10] Program halted due to non-existent variable(s) in DIAG file                   */ 
+%let MSG11= ; /*OK     : [Msg11] DIAG file contains all requisite variables                                    */ 
+%let MSG12= ; /*ERROR  : [Msg12] Program halted due to incorrect user-provided variable type(s) in DIAG file   */ 
+%let MSG13= ; /*OK     : [Msg13] DIAG file`s variables have the correct type                                   */ 
+%let MSG14= ; /*WARNING: [Msg14] Diagnosis matches no enrollee, diagnosis ignored                              */ 
+%let MSG15= ; /*WARNING: [Msg15] Blank diagnosis code, diagnosis ignored                                       */ 
+%let MSG18= ; /*WARNING: [Msg18] Missing IDVAR, enrollee rejected                                              */ 
+%let MSG19= ; /*WARNING: [Msg19] Invalid SEX, enrollee rejected                                                */ 
+%let MSG20= ; /*WARNING: [Msg20] Invalid DOB, enrollee rejected                                                */ 
+%let MSG21= ; /*WARNING: [Msg21] Invalid AGE_LAST, enrollee rejected                                           */ 
+%let MSG22= ; /*WARNING: [Msg22] Invalid METAL, enrollee rejected                                              */ 
+%let MSG23= ; /*WARNING: [Msg23] Invalid CSR_INDICATOR, enrollee rejected                                      */ 
+%let MSG24= ; /*WARNING: [Msg24] Failed HHS HCC filter, enrollee rejected                                      */ 
+%let MSG26= ; /*WARNING: [Msg26] Invalid DIAGNOSIS_VERSION_CODE, diagnosis ignored                             */ 
+%let MSG27= ; /*WARNING: [Msg27] Invalid DIAGNOSIS_SERVICE_DATE, diagnosis ignored                             */ 
+%let MSG28= ; /*WARNING: [Msg28] Invalid AGE_AT_DIAGNOSIS, diagnosis ignored                                   */ 
+%let MSG29= ; /*WARNING: [Msg29] AGE_AT_DIAGNOSIS > AGE_LAST, diagnosis ignored                                */ 
+%let MSG30= ; /*ERROR  : [Msg30] Program halted, file --- does not exist                                       */ 
+%let MSG31= ; /*WARNING: [Msg31] AGE_LAST minus AGE_AT_DIAGNOSIS > 1, diagnosis ignored                        */ 
+%let MSG32= ; /*WARNING: [Msg32] DOB > DIAGNOSIS_SERVICE_DATE, diagnosis ignored                               */ 
+%let MSG33= ; /*WARNING: [Msg33] Invalid ENROLDURATION, enrollee rejected                                      */ 
+%let MSG34= ; /*ERROR  : [Msg34] Program halted due to non-existent variable(s) in NDC file                    */ 
+%let MSG35= ; /*OK     : [Msg35] NDC file contains all requisite variables                                     */ 
+%let MSG36= ; /*ERROR  : [Msg36] Program halted due to incorrect user-provided variable type(s) in NDC file    */ 
+%let MSG37= ; /*OK     : [Msg37] NDC file`s variables have the correct type                                    */ 
+%let MSG38= ; /*WARNING: [Msg38] NDC matches no enrollee, NDC ignored                                          */ 
+%let MSG39= ; /*WARNING: [Msg39] Blank NDC code, NDC ignored                                                   */ 
+%let MSG41= ; /*ERROR  : [Msg41] Program halted due to non-existent variable(s) in HCPCS file                  */ 
+%let MSG42= ; /*OK     : [Msg42] HCPCS file contains all requisite variables                                   */ 
+%let MSG43= ; /*ERROR  : [Msg43] Program halted due to incorrect user-provided variable type(s) in HCPCS file  */ 
+%let MSG44= ; /*OK     : [Msg44] HCPCS file`s variables have the correct type                                  */ 
+%let MSG45= ; /*WARNING: [Msg45] HCPCS matches no enrollee, HCPCS ignored                                      */ 
+%let MSG46= ; /*WARNING: [Msg46] Blank HCPCS code, HCPCS ignored                                               */ 
+
+**=======================================================================================**;
+** these are typically suppressed (=*) by the user after testing, as they can            **;
+** generate many messages. E.g., to suppress message 16, change MSG16= to MSG16=*        **;
+**=======================================================================================**;
+%let MSG16= ; /*WARNING: [Msg16] Diagnosis lookup failed, diagnosis ignored                                    */ 
+%let MSG17= ; /*NOTE   : [Msg17] Enrollee has no diagnoses, risk score based on remaining information          */ 
+%let MSG25= ; /*WARNING: [Msg25] Possible bundled mother/infant claim(s) -- ---                                */ 
+%let MSG40= ; /*WARNING: [Msg40] NDC lookup failed, NDC ignored                                                */ 
+%let MSG47= ; /*WARNING: [Msg47] HCPCS lookup failed, HCPCS ignored                                            */ 
+
+**=======================================================================================**;
+**=======================================================================================**;
+**=======================================================================================**;
+
+** user provides parameters below **;
+
+%V0519F3M( INP      = IN1.PERSON,
+           IND      = IN2.DIAG,
+           INN      = IN3.NDC,
+           INH      = IN4.HCPCS,
+           OUTDATA  = OUT.Master,
+           IDVAR    = ID,
+           KEEPVAR  = DOB
+                      AGE_LAST
+                      SEX
+                      METAL
+                      CSR_INDICATOR
+                      ENROLDURATION
+                      SCORE_:
+                      CSR_ADJ_SCR_:
+                      /*_ALL_*/,
+           CCFMT0Y1 = HHS_V&CV.Y&YY1.OC,
+           CCFMT0Y2 = HHS_V&CV.Y&YY1.OC,
+           RXCFMTN  = NDCV&YY1.05_RXCV5_1F,
+           RXCFMTH  = HCPC&YY1.05_RXCV5_1F,
+           AGEFMT0  = I0AGEY&YY1.MCE,
+           SEXFMT0  = I0SEXY&YY1.MCE
+         ); run;
+
+** end **;

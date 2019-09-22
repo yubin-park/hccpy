@@ -70,7 +70,7 @@ class HCCEngine:
                 "female": "F",
                 "unknown": "F"}
         if sex.lower() in smap:
-            sex = smap[sex.lower()}]
+            sex = smap[sex.lower()]
         return sex
 
     def profile(self, dx_lst, age=70, sex="M", 

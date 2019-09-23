@@ -76,7 +76,7 @@ def apply_agesex_edits(cc_dct, age, sex):
         for dx in (dx for dx in elst10 if dx in cc_dct):
             cc_dct[dx] = "HHS_HCC075"
 
-    cc_lst = [cc for cc in cc_dct.values() if cc != "HHS_HCC_NA"]
+    cc_dct = {dx:cc for dx, cc in cc_dct.items() if cc != "HHS_HCC_NA"}
 
-    return cc_lst
+    return cc_dct
 

@@ -41,8 +41,7 @@ class HCCEngine:
     def _apply_hierarchy(self, cc_dct, age, sex):
         """Returns a list of HCCs after applying hierarchy and age/sex edit
         """
-        cc_lst = V22I0ED2.apply_agesex_edits(cc_dct, age, sex)
-        cc_cnt = Counter(cc_lst)
+        cc_cnt = Counter(set(cc_dct.values()))
         for k, v in self.hier.items():
             if k in cc_cnt:
                 for v_i in v:
@@ -112,9 +111,10 @@ class HCCEngine:
 
         dx_set = {dx.strip().upper().replace(".","") for dx in dx_lst}
         cc_dct = {dx:self.dx2cc[dx] for dx in dx_set if dx in self.dx2cc}
+        cc_dct = V22I0ED2.apply_agesex_edits(cc_dct, age, sex)
         hcc_lst = self._apply_hierarchy(cc_dct, age, sex)
-        ihcc_lst = self._apply_interactions(hcc_lst, age, disabled)
-        risk_dct = V2218O1P.get_risk_dct(self.coefn, ihcc_lst, age, 
+        hcc_lst = self._apply_interactions(hcc_lst, age, disabled)
+        risk_dct = V2218O1P.get_risk_dct(self.coefn, hcc_lst, age, 
                                         sex, elig, origds)
 
         score = np.sum([x for x in risk_dct.values()])
@@ -185,15 +185,18 @@ class HCCEngine:
         added_set = after_set - before_set
         deleted_set = before_set - after_set
 
-        truly_deleted = []
-        for deleted_item in deleted_set:
-            desc = self.describe_hcc(deleted_item)
-            if not any((p in added_set) for p in desc["parents"]):
-                truly_deleted.append(deleted_item) 
+        for added_item in added_set:
+            if added_item not in self.hier:
+                continue
+            for child_item in self.hier[added_item]:
+                if child_item in deleted_set:
+                    deleted_set.remove(child_item)
+
         out = {
             "added": list(added_set),
-            "deleted": truly_deleted
+            "deleted": list(deleted_set)
             }
+ 
         return out
 
 

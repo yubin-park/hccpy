@@ -1,4 +1,5 @@
 from collections import Counter
+import numpy as np
 
 def _adult(cc_lst):
 
@@ -161,7 +162,7 @@ def _child(cc_lst):
 
     return cc_lst
 
-def _infant(cc_lst, age, sex):
+def _infant(cc_lst, age):
 
     x = Counter(cc_lst)
     z = Counter()
@@ -179,7 +180,7 @@ def _infant(cc_lst, age, sex):
     x["HHS_HCC208"] = 0
     x["HHS_HCC209"] = 0
 
-    svarpmap = {"IHCC_Severity5": ["HHS_HCC008", "HHS_HCC018",
+    svarmap = {"IHCC_Severity5": ["HHS_HCC008", "HHS_HCC018",
                     "HHS_HCC034", "HHS_HCC035", "HHS_HCC041",
                     "HHS_HCC042", "HHS_HCC125", "HHS_HCC128",
                     "HHS_HCC129", "HHS_HCC130", "HHS_HCC137",
@@ -219,6 +220,7 @@ def _infant(cc_lst, age, sex):
                     "HHS_HCC047", "HHS_HCC071", "HHS_HCC102",
                     "HHS_HCC103", "HHS_HCC118", "HHS_HCC161",
                     "HHS_HCC188", "HHS_HCC254"]}
+    
     for svar, cc_lst in svarmap.items():
         for cc in cc_lst:
             if x[cc] > 0:

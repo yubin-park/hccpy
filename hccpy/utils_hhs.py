@@ -28,7 +28,6 @@ def read_code2rxc(fn):
             pz = "".join(["0"] *(2-len(row[1])))
             rxc = "RXC{}{}".format(pz, row[1])
             code2rxc[row[0]] = rxc
-            rxclabels[rxc] = row[2]
     return code2rxc
 
 def read_coefn(fn):
@@ -80,20 +79,3 @@ def read_label(fn):
             labels[k] = v 
     return labels
 
-#if __name__ == "__main__":
-
-    #data = read_dx2cc("data/H0519F3.FY 2019 ICD10.TXT")
-    #print(data)
-    #ndc2rxc = read_code2rxc("data/H0519F3_NDC.4_4.1812.TXT")
-    #print(ndc2rxc)
-    #hcpcs2rxc = read_code2rxc("data/H0519F3_HCPCS.4_4.1812.TXT")
-    #print(hcpcs2rxc)
-
-    #hier = read_hier("data/V05128H1.TXT")
-    #print(hier)
-    #labels = read_label("data/V05128L1.TXT")
-    #import json
-    #print(json.dumps(labels, indent=2, sort_keys=True))
-
-    #coefn = read_coefn("data/HHS19hcccoefn.csv")
-    #print(coefn)

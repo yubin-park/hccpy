@@ -14,6 +14,6 @@ def apply_agesex_edits(cc_dct, age, sex):
     if age < 6 or age > 18:
         for dx in (dx for dx in elst2 if dx in cc_dct):
             cc_dct[dx] = "HCCNA"
-    cc_lst = [cc for cc in cc_dct.values() if cc != "HCCNA"]
-    return cc_lst
+    cc_dct = {dx:cc for dx, cc in cc_dct.items() if cc != "HCCNA"}
+    return cc_dct
 

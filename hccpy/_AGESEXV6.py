@@ -2,19 +2,18 @@
 def get_agesex(age, sex):
 
     agegroup = "Adult"
-    agemisc = ""
     agesexvar = "MAGE_LAST_21_24" 
 
     if age < 1:
-        if sex == "M": 
-            agemisc = "Age0_Male" 
-        agegroup = "Infant"
         agesexvar = sex + "AGE_LAST_0_0"
-    elif age < 2:
-        if sex == "M":
-            agemisc = "Age1_Male"
+        if sex == "M": 
+            agesexvar = "AGE0_MALE" 
         agegroup = "Infant"
+    elif age < 2:
         agesexvar = sex + "AGE_LAST_1_1"
+        if sex == "M":
+            agesexvar = "AGE1_MALE"
+        agegroup = "Infant"
     elif age < 5:
         agegroup = "Child"
         agesexvar = sex + "AGE_LAST_2_4"
@@ -55,7 +54,7 @@ def get_agesex(age, sex):
         agegroup = "Adult"
         agesexvar = sex + "AGE_LAST_60_GT"
 
-    return agesexvar, agegroup, agemisc
+    return agesexvar, agegroup
 
 
 

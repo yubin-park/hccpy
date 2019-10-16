@@ -88,8 +88,8 @@ class HHSHCCEngine:
                         if pr in self.hcpcs2rxc})
 
         cc_dct = I0V05ED2.apply_agesex_edits(cc_dct, age, sex)
-        hcc_lst = self._apply_hierarchy(cc_dct, age, sex)
-        hcc_lst = self._apply_interactions(hcc_lst, agegroup, age)
+        hcc_lst_0 = self._apply_hierarchy(cc_dct, age, sex)
+        hcc_lst = self._apply_interactions(hcc_lst_0, agegroup, age)
         risk_dct = V0519F3P.get_risk_dct(self.coefn, hcc_lst, 
                                             agesexvar, agegroup, plate) 
 
@@ -97,7 +97,7 @@ class HHSHCCEngine:
         out = {
                 "risk_score": score,
                 "details": risk_dct,
-                "hcc_lst": hcc_lst,    # HCC list before interactions
+                "hcc_lst": hcc_lst_0,   # HCC list before interactions
                 "hcc_map": cc_dct,     # before applying hierarchy
                 "parameters": {
                     "age": age,

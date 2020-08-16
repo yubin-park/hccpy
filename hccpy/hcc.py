@@ -10,7 +10,7 @@ import hccpy._V2218O1P as V2218O1P # risk coefn (v22, v23, v24)
 
 class HCCEngine:
 
-    def __init__(self, version="22", year="2019"):
+    def __init__(self, version="24", year="2019"):
         fnmaps = {
                 "22": {
                     "dx2cc": "data/F2218O1P.TXT",
@@ -26,7 +26,7 @@ class HCCEngine:
                 },
                 "24": {
                     "dx2cc": "data/F2419P1M.TXT",
-                    "coefn": "data/V23hcccoefn.csv", # NOTE: V24 not yet
+                    "coefn": "data/V24hcccoefn.csv",
                     "label": "data/V24H86L1.TXT",
                     "hier": "data/V24H86H1.TXT"
                 }

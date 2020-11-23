@@ -41,13 +41,17 @@ class HCCEngine:
     def _apply_hierarchy(self, cc_dct, age, sex):
         """Returns a list of HCCs after applying hierarchy and age/sex edit
         """
-        cc_cnt = Counter(set(cc_dct.values()))
+        cc_lst_all = []
+        for dx, cc_lst in cc_dct.items():
+            cc_lst_all += [cc for cc in cc_lst if cc != "HCCNA"]
+        cc_cnt = Counter(set(cc_lst_all))
+        
         for k, v in self.hier.items():
             if k in cc_cnt:
                 for v_i in v:
                     cc_cnt[v_i] -= 1
-        cc_lst = [k for k, v in cc_cnt.items() if v > 0]
-        return cc_lst
+        cc_lst_unique = [k for k, v in cc_cnt.items() if v > 0]
+        return cc_lst_unique
 
     def _apply_interactions(self, cc_lst, age, disabled):
         """Returns a list of HCCs after applying interactions.

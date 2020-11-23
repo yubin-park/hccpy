@@ -7,13 +7,12 @@ def apply_agesex_edits(cc_dct, age, sex):
     elst2 = ["F3481"]
     if sex == "F":
         for dx in (dx for dx in elst0 if dx in cc_dct):
-            cc_dct[dx] = "HCC48" 
+            cc_dct[dx] = ["HCC48"]
     if age < 18:
         for dx in (dx for dx in elst1 if dx in cc_dct):
-            cc_dct[dx] = "HCC112"
+            cc_dct[dx] = ["HCC112"]
     if age < 6 or age > 18:
         for dx in (dx for dx in elst2 if dx in cc_dct):
-            cc_dct[dx] = "HCCNA"
-    cc_dct = {dx:cc for dx, cc in cc_dct.items() if cc != "HCCNA"}
+            cc_dct[dx] = ["HCCNA"]
     return cc_dct
 

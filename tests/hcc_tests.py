@@ -116,6 +116,18 @@ class TestHCCEngine(unittest.TestCase):
         self.assertTrue("HCC19" not in out["deleted"])
         self.assertEqual(len(out["deleted"]), 0)
 
+    def test_1toMany_mapping(self):
+
+        he = HCCEngine()
+        rp = he.profile(["E0952"])
+        self.assertTrue("HCC18" in rp["hcc_map"]["E0952"])
+        self.assertTrue("HCC106" in rp["hcc_map"]["E0952"])
+        self.assertTrue("HCC108" in rp["hcc_map"]["E0952"])
+
+        rp = he.profile(["E083599"])
+        self.assertTrue("HCC18" in rp["hcc_map"]["E083599"])
+        self.assertTrue("HCC122" in rp["hcc_map"]["E083599"])
+
 if __name__ == "__main__":
 
     unittest.main()

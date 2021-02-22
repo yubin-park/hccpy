@@ -28,6 +28,7 @@ class HCCEngine:
                     "dx2cc": "data/F2419P1M.TXT",
                     "coefn": "data/V24hcccoefn.csv",
                     "label": "data/V24H86L1.TXT",
+                    "label_short": "data/V24_label_short.json",
                     "hier": "data/V24H86H1.TXT"
                 }
 
@@ -37,6 +38,10 @@ class HCCEngine:
         self.coefn = utils.read_coefn(fnmaps[version]["coefn"])
         self.label = utils.read_label(fnmaps[version]["label"])
         self.hier = utils.read_hier(fnmaps[version]["hier"])
+        self.label_short = {}
+        if "label_short" in fnmaps[version]:
+            self.label_short = utils.read_label_short(
+                                fnmaps[version]["label_short"])
 
     def _apply_hierarchy(self, cc_dct, age, sex):
         """Returns a list of HCCs after applying hierarchy and age/sex edit
@@ -150,6 +155,7 @@ class HCCEngine:
         cc = cc.upper()
         # cc needs no prefix "HCC"
         cc_desc = self.label.get(cc.replace("HCC", ""), "N/A")  
+        cc_desc_short = self.label_short.get(cc.replace("HCC", ""), "N/A")  
         if "HCC" not in cc:
             cc = "HCC{}".format(cc)
         cc_children = self.hier.get(cc, [])
@@ -159,6 +165,7 @@ class HCCEngine:
                 cc_parents.append(k)
         out = {
             "description": cc_desc,
+            "desc_short": cc_desc_short,
             "children": cc_children,
             "parents": cc_parents
         }

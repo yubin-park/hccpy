@@ -1,3 +1,4 @@
+import json
 import csv
 import re
 from pkg_resources import resource_filename as rscfn
@@ -59,5 +60,18 @@ def read_label(fn):
             v = matches[0][1].strip()
             labels[k] = v 
     return labels
+
+def read_label_short(fn):
+    fn = rscfn(__name__, fn)
+    label_short = {}
+    with open(fn, "r") as fp:
+        label_short = json.load(fp)
+    return label_short
+
+
+
+
+
+
 
 

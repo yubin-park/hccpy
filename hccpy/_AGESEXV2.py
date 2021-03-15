@@ -8,7 +8,6 @@ def get_ds(age, orec, medicaid, elig):
     if orec == "1" and disabled == 0:
         origds = 1
     if elig in {"NE", "SNPNE"}:
-        edit = ""
         if medicaid:
             elig += "_MCAID"
         else:

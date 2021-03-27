@@ -36,7 +36,7 @@ def get_risk_dct(coefn, hcc_lst, age, sex, elig, origds):
         if sex == "M":
             elig_origds += "Male" 
         else:
-            elig_origds += "Femle" 
+            elig_origds += "Female" 
         if elig_origds in coefn:
             risk_dct[elig_origds] = coefn[elig_origds]
         else:

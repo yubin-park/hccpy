@@ -83,8 +83,8 @@ def _adult(cc_lst):
         x["INT_GROUP_M"] = 1
 
     # NOTE: ED variables are ignored in this library
-    for i in range(1, 12):
-        x["ED_{}".format(i)] = 1
+    #for i in range(1, 12):
+    #    x["ED_{}".format(i)] = 1
 
     x["RXC_01_X_HCC001"] = x["RXC_01"] * x["HHS_HCC001"]
     x["RXC_02_X_HCC037_1_036_035_034"] = (x["RXC_02"] *

@@ -57,7 +57,7 @@ class HHSHCCEngine:
         return sex
 
     def profile(self, dx_lst, pr_lst=[], rx_lst=[], 
-                age=20, sex="M", plate="S"):
+                age=20, sex="M", enroll_months=10, plate="S"):
         """Returns the HCC risk profile of a given patient information.
 
         Parameters
@@ -72,10 +72,14 @@ class HHSHCCEngine:
               The age of the patient.
         sex : str 
               The sex of the patient; {"M", "F"}
+        enroll_months : int
+              The number of months the patient was enrolled
         """
 
         sex = self._sexmap(sex)
         agesexvar, agegroup = AGESEXV6.get_agesex(age, sex)
+        enroll_months = str(enroll_months)
+        enroll_dur = "ED_"+enroll_months
 
         # dx2cc
         dx_set = {dx.strip().upper().replace(".","") for dx in dx_lst}
@@ -101,7 +105,8 @@ class HHSHCCEngine:
                 "hcc_map": cc_dct,     # before applying hierarchy
                 "parameters": {
                     "age": age,
-                    "sex": sex
+                    "sex": sex,
+                    "enroll_months": enroll_months
                     }
                 }
         return out

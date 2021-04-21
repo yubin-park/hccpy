@@ -1,5 +1,5 @@
 
-def get_risk_dct(coefn, hcc_lst, agesexvar, agegroup, plate):
+def get_risk_dct(coefn, hcc_lst, agesexvar, agegroup, enroll_dur, plate):
 
     risk_dct = {}
 

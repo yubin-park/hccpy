@@ -124,7 +124,7 @@ class HCCEngine:
         hcc_lst = self._apply_hierarchy(cc_dct, age, sex)
         hcc_lst = self._apply_interactions(hcc_lst, age, disabled)
         risk_dct = V2218O1P.get_risk_dct(self.coefn, hcc_lst, age, 
-                                        sex, elig, origds)
+                                        sex, elig, origds, medicaid)
 
         score = np.sum([x for x in risk_dct.values()])
         out = {

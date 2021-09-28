@@ -40,15 +40,15 @@ class TestHCCEngine(unittest.TestCase):
         he = HCCEngine()
 
         rp = he.profile(["E1169", "I509"], age=70, sex="M", elig="CNA")
-        self.assertTrue(np.isclose(rp["risk_score"], 1.027))
+        self.assertTrue(np.isclose(rp["risk_score"], 1.148))
 
         rp = he.profile(["E1169", "I5030", "I509", "I211", "I209", "R05"],
                         age=70, sex="M", elig="CNA")
-        self.assertTrue(np.isclose(rp["risk_score"], 1.162))
+        self.assertTrue(np.isclose(rp["risk_score"], 1.283))
 
         rp = he.profile(["E1169", "I5030", "I509", "I211", "I209", "R05"],
                         age=45, sex="F", elig="CND")
-        self.assertTrue(np.isclose(rp["risk_score"], 1.257))
+        self.assertTrue(np.isclose(rp["risk_score"], 1.281))
 
 
     def test_versionyear(self):
@@ -66,8 +66,18 @@ class TestHCCEngine(unittest.TestCase):
         he = HCCEngine(version="24")
         rp = he.profile(["E1169", "I5030", "I509", "I211", "I209", "R05"],
                         age=70, sex="M", elig="CNA")
-        self.assertTrue(np.isclose(rp["risk_score"], 1.162))
+        self.assertTrue(np.isclose(rp["risk_score"], 1.283))
         self.assertTrue("CNA_D3" in rp["details"])
+        
+        # Test interactions
+        rp = he.profile(["E109", "I509"],
+                        age=80, sex="M", elig="CPA", orec="0", medicaid=True)
+        self.assertTrue(np.isclose(rp["risk_score"], 1.08)) # CHF + Diabetes
+        
+        rp = he.profile(["A021"],
+                        age=64, sex="M", elig="INS", orec="0", medicaid=True)
+        self.assertTrue(np.isclose(rp["risk_score"], 1.446)) # INS + Medicaid
+        
 
     def test_hccdescription(self):
 

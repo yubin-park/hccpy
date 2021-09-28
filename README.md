@@ -238,6 +238,7 @@ Apache 2.0
 ## Authors
 - Yubin Park, PhD
 - Thomas Chen
+- David Roberts
 
 ## References
 - https://www.nber.org/data/cms-risk-adjustment.html

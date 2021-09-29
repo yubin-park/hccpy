@@ -236,9 +236,10 @@ NOTE: The data file (`CY2019Q2_CPTHCPCS_CMS_20190425.csv`) should be located in 
 Apache 2.0
 
 ## Authors
-- Yubin Park, PhD
-- Thomas Chen
-- David Roberts
+- Yubin Park @yubin-park
+- Thomas Chen @t-kychen
+- Matt Walker @mwalker14
+- David Roberts @dr00b
 
 ## References
 - https://www.nber.org/data/cms-risk-adjustment.html

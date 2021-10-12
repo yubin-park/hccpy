@@ -34,7 +34,9 @@ def create_interactions(cc_lst, DISABL, age):
     x["HCC85_gRenal_V24"] = x["HCC85"] * z["RENAL_V24"]
     x["gCopdCF_CARD_RESP_FAIL"] = z["CARD_RESP_FAIL"] * z["gCopdCF"]
     x["HCC85_HCC96"] = x["HCC85"] * x["HCC96"]
-    x["gSubstanceAbuse_gPsychiatric_V24"] = (z["gPsychiatric_V24"] * 
+    # x["gSubstanceAbuse_gPsychiatric_V24"] = (z["gPsychiatric_V24"] *
+    #                                     z["gSubstanceAbuse_V24"])
+    x["gSubstanceUseDisorder_gPsych"] = (z["gPsychiatric_V24"] *
                                         z["gSubstanceAbuse_V24"])
     
     # institutional model interactions

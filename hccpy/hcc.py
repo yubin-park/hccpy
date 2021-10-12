@@ -25,7 +25,7 @@ class HCCEngine:
                     "hier": "data/V23H83H1.TXT"
                 },
                 "24": {
-                    "dx2cc": "data/F2419P1M.TXT",
+                    "dx2cc": "data/F2421P2M.TXT",
                     "coefn": "data/V24hcccoefn.csv",
                     "label": "data/V24H86L1.TXT",
                     "label_short": "data/V24_label_short.json",

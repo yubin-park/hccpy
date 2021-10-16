@@ -10,31 +10,44 @@ import hccpy._V2218O1P as V2218O1P # risk coefn (v22, v23, v24)
 
 class HCCEngine:
 
-    def __init__(self, version="24", year="2019"):
+    def __init__(self, version="24", dx2cc_year="Combined"):
         fnmaps = {
-                "22": {
-                    "dx2cc": "data/F2218O1P.TXT",
-                    "coefn": "data/V22hcccoefn.csv",
-                    "label": "data/V22H79L1.TXT",
-                    "hier": "data/V22H79H1.TXT"
-                },
-                "23": {
-                    "dx2cc": "data/F2318P1Q.TXT",
-                    "coefn": "data/V23hcccoefn.csv",
-                    "label": "data/V23H83L2.TXT",
-                    "hier": "data/V23H83H1.TXT"
-                },
-                "24": {
-                    "dx2cc": "data/F2421P2M.TXT",
-                    "coefn": "data/V24hcccoefn.csv",
-                    "label": "data/V24H86L1.TXT",
-                    "label_short": "data/V24_label_short.json",
-                    "hier": "data/V24H86H1.TXT"
-                }
-
+            "22": {
+                "dx2cc": {"2017": "data/F2217O1P.TXT",
+                          "2018": "data/F2218O1P.TXT",
+                          "2019": "data/F2219O1P.TXT",
+                          "2020": "data/F2220O1P.TXT",
+                          "2021": "data/F2221O1P.TXT",
+                          "2022": "data/F2221O2P.TXT",  # preliminary mappings
+                          "Combined": "data/F22_AllYearsCombined.TXT"},
+                "coefn": "data/V22hcccoefn.csv",
+                "label": "data/V22H79L1.TXT",
+                "hier": "data/V22H79H1.TXT"
+            },
+            "23": {
+                "dx2cc": {"2018": "data/F2318P1Q.TXT",
+                          "2019": "data/F2319P1Q.TXT",
+                          "Combined": "data/F23_AllYearsCombined.TXT"},  # CMS has not provided updated mappings
+                "coefn": "data/V23hcccoefn.csv",
+                "label": "data/V23H83L2.TXT",
+                "hier": "data/V23H83H1.TXT"
+            },
+            "24": {
+                "dx2cc": {"2019": "data/F2419P1M.TXT",
+                          "2020": "data/F2420P1M.TXT",
+                          "2021": "data/F2421P1M.TXT",
+                          "2022": "data/F2421P2M.TXT",  # preliminary mappings
+                          "Combined": "data/F24_AllYearsCombined.TXT"},
+                "coefn": "data/V24hcccoefn.csv",
+                "label": "data/V24H86L1.TXT",
+                "label_short": "data/V24_label_short.json",
+                "hier": "data/V24H86H1.TXT"
             }
+
+        }
+        assert fnmaps[version]["dx2cc"].get(dx2cc_year), "Invalid combination of version and year parameters"
         self.version = version
-        self.dx2cc = utils.read_dx2cc(fnmaps[version]["dx2cc"])
+        self.dx2cc = utils.read_dx2cc(fnmaps[version]["dx2cc"][dx2cc_year])
         self.coefn = utils.read_coefn(fnmaps[version]["coefn"])
         self.label = utils.read_label(fnmaps[version]["label"])
         self.hier = utils.read_hier(fnmaps[version]["hier"])

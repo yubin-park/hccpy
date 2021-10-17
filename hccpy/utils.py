@@ -68,10 +68,16 @@ def read_label_short(fn):
         label_short = json.load(fp)
     return label_short
 
-
-
-
-
-
-
-
+def combine_dx2cc(file_list, fn):
+    """Given file list, read and dedup Dx to HCC mappings. Write to file name"""
+    all_lines = []
+    all_lines_set = set({})
+    for file in file_list:
+        with open(file, "r") as f_in:
+            for line in f_in.readlines():
+                l_strip = line.strip()
+                if l_strip not in all_lines_set:
+                    all_lines.append(line)
+                all_lines_set.add(l_strip)
+    with open(fn, "w") as f_out:
+        f_out.writelines(sorted(all_lines))

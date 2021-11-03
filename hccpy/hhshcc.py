@@ -95,7 +95,7 @@ class HHSHCCEngine:
         hcc_lst_0 = self._apply_hierarchy(cc_dct, age, sex)
         hcc_lst = self._apply_interactions(hcc_lst_0, agegroup, age)
         risk_dct = V0519F3P.get_risk_dct(self.coefn, hcc_lst, 
-                                            agesexvar, agegroup, plate) 
+                                            agesexvar, agegroup, enroll_dur, plate) 
 
         score = np.sum([x for x in risk_dct.values()])
         out = {

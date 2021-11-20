@@ -233,6 +233,14 @@ False
 ```
 NOTE: The data file (`CY2019Q2_CPTHCPCS_CMS_20190425.csv`) should be located in the same folder.
 
+## NOTE
+
+- https://packaging.python.org/tutorials/packaging-projects/
+```
+python -m build
+twine upload dist/*
+```
+
 ## License
 Apache 2.0
 

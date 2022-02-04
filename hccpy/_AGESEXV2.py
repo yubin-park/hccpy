@@ -5,7 +5,7 @@ def get_ds(age, orec, medicaid, elig):
     if age < 65 and orec != "0":
         disabled = 1
     origds = 0
-    if orec == "1" and disabled == 0:
+    if orec in ("1", "3") and disabled == 0:
         origds = 1
     if elig in {"NE", "SNPNE"}:
         if medicaid:

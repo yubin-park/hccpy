@@ -7,7 +7,8 @@ The original SAS implementation can be found [here](https://www.nber.org/data/cm
 Currently, hccpy supports CMS-HCC V22, V23, and V24 and HHS-HCC Year 2019.
 
 NOTE: This package does not support for ICD-9.
-NOTE: The latest version is 0.1.1 - updated on 2021/10/17
+
+NOTE: The latest version is 0.1.2 - updated on 2021/11/20.
 
 ## Installing
 

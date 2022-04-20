@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setup(packages=find_packages(),
     name="hccpy",
-    version="0.1.2",
+    version="0.1.3",
     description="hccpy is a Python implementation of HCC",
     long_description=long_description,
     long_description_content_type="text/markdown",

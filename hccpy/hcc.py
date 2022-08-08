@@ -18,8 +18,7 @@ class HCCEngine:
                           "2019": "data/F2219O1P.TXT",
                           "2020": "data/F2220O1P.TXT",
                           "2021": "data/F2221O1P.TXT",
-                          "2022": "data/F2221O2P.TXT",
-                          "2023": "data/F2222O1P.TXT",  # preliminary mappings
+                          "2022": "data/F2222O1P.TXT",  # finalized mappings
                           "Combined": "data/F22_AllYearsCombined.TXT"},
                 "coefn": "data/V22hcccoefn.csv",
                 "label": "data/V22H79L1.TXT",
@@ -37,8 +36,7 @@ class HCCEngine:
                 "dx2cc": {"2019": "data/F2419P1M.TXT",
                           "2020": "data/F2420P1M.TXT",
                           "2021": "data/F2421P1M.TXT",
-                          "2022": "data/F2421P2M.TXT",
-                          "2022": "data/F2422P1M.TXT",  # preliminary mappings
+                          "2022": "data/F2422P1M.TXT",  # finalized mappings
                           "Combined": "data/F24_AllYearsCombined.TXT"},
                 "coefn": "data/V24hcccoefn.csv",
                 "label": "data/V24H86L1.TXT",

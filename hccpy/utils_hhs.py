@@ -26,7 +26,7 @@ def read_code2rxc(fn):
         for row in reader:
             row = [x.strip() for x in row]
             pz = "".join(["0"] *(2-len(row[1])))
-            rxc = "RXC{}{}".format(pz, row[1])
+            rxc = "RXC_{}{}".format(pz, row[1])
             code2rxc[row[0]] = rxc
     return code2rxc
 

@@ -8,7 +8,7 @@ import hccpy._V0519F3P as V0519F3P # risk coefn
 
 class HHSHCCEngine:
 
-    def __init__(self, myear="2019"):
+    def __init__(self, myear="2022"):
         
         fnmaps = {
                 "2019": {
@@ -18,6 +18,14 @@ class HHSHCCEngine:
                     "coefn": "data/HHS19hcccoefn.csv",
                     "label": "data/V05128L1.TXT",
                     "hier": "data/V05128H1.TXT"
+                },
+                "2022": {
+                    "dx2cc": "data/CY22F07A_FY 2022 ICD10.TXT",
+                    "ndc2rxc": "data/CY22F07A_NDC8_1_22_04.TXT",
+                    "hcpcs2rxc": "data/CY22F07A_HCPCS8_1_22_04.TXT",
+                    "coefn": "data/HHS22hcccoefn.csv",
+                    "label": "data/V07141H1.TXT",
+                    "hier": "data/V07141L1.TXT"
                 }
             }
         self.myear = myear

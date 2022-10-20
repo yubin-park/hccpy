@@ -7,6 +7,7 @@ import hccpy._V2318P1M as V2318P1M # interactions (v23)
 import hccpy._V2419P1M as V2419P1M # interactions (v24)
 import hccpy._AGESEXV2 as AGESEXV2 # disabled/origds (v22, v23, v24)
 import hccpy._V2218O1P as V2218O1P # risk coefn (v22, v23, v24)
+import hccpy._E2118P1P as E2118P1P # risk coefn for ESRD
 
 class HCCEngine:
 
@@ -42,9 +43,16 @@ class HCCEngine:
                 "label": "data/V24H86L1.TXT",
                 "label_short": "data/V24_label_short.json",
                 "hier": "data/V24H86H1.TXT"
+            },
+            "ESRDv21": {
+                "dx2cc": {"2019": "data/F2118H1R.txt",
+                          "Combined": "data/F2118H1R.txt"},
+                "coefn": "data/ESRDhcccoefn.csv",
+                "label": "data/V20H87L1.txt",
+                "hier": "data/V20H87H1.txt"
             }
-
         }
+
         assert fnmaps[version]["dx2cc"].get(dx2cc_year), "Invalid combination of version and year parameters"
         self.version = version
         self.dx2cc = utils.read_dx2cc(fnmaps[version]["dx2cc"][dx2cc_year])
@@ -136,8 +144,11 @@ class HCCEngine:
         cc_dct = V22I0ED2.apply_agesex_edits(cc_dct, age, sex)
         hcc_lst = self._apply_hierarchy(cc_dct, age, sex)
         hcc_lst = self._apply_interactions(hcc_lst, age, disabled)
-        risk_dct = V2218O1P.get_risk_dct(self.coefn, hcc_lst, age, 
+        if "ESRD" not in self.version:
+            risk_dct = V2218O1P.get_risk_dct(self.coefn, hcc_lst, age, 
                                         sex, elig, origds, medicaid)
+        else:
+            risk_dct = E2118P1P.get_risk_dct(self.coefn, hcc_lst, age, sex)
 
         score = np.sum([x for x in risk_dct.values()])
         out = {
@@ -152,7 +163,8 @@ class HCCEngine:
                     "medicaid": medicaid,
                     "disabled": disabled,
                     "origds": origds
-                    }
+                    },
+                "model": self.version
                 }
         return out
 

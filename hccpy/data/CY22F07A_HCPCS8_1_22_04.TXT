@@ -1,0 +1,37 @@
+C9086	9	Immune suppressants and Immunomodulators
+C9482	3	Antiarrhythmics
+J0129	9	Immune suppressants and Immunomodulators
+J0135	9	Immune suppressants and Immunomodulators
+J0202	8	Multiple Sclerosis Agents
+J0282	3	Antiarrhythmics
+J0490	9	Immune suppressants and Immunomodulators
+J0717	9	Immune suppressants and Immunomodulators
+J0741	1	Anti-HIV Agents
+J0881	4	Phosphate Binders
+J0885	4	Phosphate Binders
+J0887	4	Phosphate Binders
+J1160	3	Antiarrhythmics
+J1324	1	Anti-HIV Agents
+J1438	9	Immune suppressants and Immunomodulators
+J1595	8	Multiple Sclerosis Agents
+J1602	9	Immune suppressants and Immunomodulators
+J1742	3	Antiarrhythmics
+J1745	9	Immune suppressants and Immunomodulators
+J1746	1	Anti-HIV Agents
+J1815	6	Insulin
+J1817	6	Insulin
+J1826	8	Multiple Sclerosis Agents
+J1830	8	Multiple Sclerosis Agents
+J2350	8	Multiple Sclerosis Agents
+J2501	4	Phosphate Binders
+J3262	9	Immune suppressants and Immunomodulators
+J3358	9	Immune suppressants and Immunomodulators
+J3380	9	Immune suppressants and Immunomodulators
+J3485	1	Anti-HIV Agents
+J7639	10	Cystic Fibrosis Agents
+J7682	10	Cystic Fibrosis Agents
+J9302	8	Multiple Sclerosis Agents
+Q3028	8	Multiple Sclerosis Agents
+Q5103	9	Immune suppressants and Immunomodulators
+Q5104	9	Immune suppressants and Immunomodulators
+Q5121	9	Immune suppressants and Immunomodulators

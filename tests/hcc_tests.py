@@ -114,7 +114,6 @@ class TestHCCEngine(unittest.TestCase):
         doc = he.describe_hcc("17")
         self.assertTrue("HCC18" in doc["children"])
         self.assertTrue("HCC19" in doc["children"])
-        print(doc)
 
     def test_diff(self):
 
@@ -138,6 +137,8 @@ class TestHCCEngine(unittest.TestCase):
         rp = he.profile(["E083599"])
         self.assertTrue("HCC18" in rp["hcc_map"]["E083599"])
         self.assertTrue("HCC122" in rp["hcc_map"]["E083599"])
+
+
 
 if __name__ == "__main__":
 

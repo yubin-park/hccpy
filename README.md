@@ -13,7 +13,7 @@ Currently, hccpy supports:
 * CMS-HCC V24
 * CMS-HCC ESRD
 * HHS-HCC 2019
-* HHS-HCC 2021
+* HHS-HCC 2022
 
 Note that hccpy does not have support for ICD-9.
 

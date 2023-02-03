@@ -24,8 +24,8 @@ class HHSHCCEngine:
                     "ndc2rxc": "data/CY22F07A_NDC8_1_22_04.TXT",
                     "hcpcs2rxc": "data/CY22F07A_HCPCS8_1_22_04.TXT",
                     "coefn": "data/HHS22hcccoefn.csv",
-                    "label": "data/V07141H1.TXT",
-                    "hier": "data/V07141L1.TXT"
+                    "label": "data/V07141L1.TXT",
+                    "hier": "data/V07141H1.TXT"
                 }
             }
         self.myear = myear

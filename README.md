@@ -5,12 +5,13 @@ Hierachical Condition Categories Python Package.
 This module implements the [Hierachical Condition Categories](https://www.cms.gov/cciio/resources/forms-reports-and-other-resources/downloads/ra-march-31-white-paper-032416.pdf) that are used for adjusting risks for the Medicare population.
 The original SAS implementation can be found [here](https://www.nber.org/data/cms-risk-adjustment.html).
 
-The latest version is 0.1.5 which was released on 10/20/2022.
+The latest version is 0.1.6 which was released on 05/09/2023.
 
 Currently, hccpy supports:
 * CMS-HCC V22
 * CMS-HCC V23
 * CMS-HCC V24
+* CMS-HCC V28
 * CMS-HCC ESRD
 * HHS-HCC 2019
 * HHS-HCC 2022
@@ -137,6 +138,16 @@ To get a HCC profile from a list of diagnosis codes (in ICD-10):
 }
 >>>
 ```
+### HCC for the new model, V28
+
+Please use "V28" when initializing the engine.
+
+```python
+>>> from hccpy.hcc import HCCEngine
+>>> he = HCCEngine("V28")
+```
+
+Also, see the examples in `tests`.
 
 ### HCC-Profiling a New Member
 

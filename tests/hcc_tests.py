@@ -78,6 +78,20 @@ class TestHCCEngine(unittest.TestCase):
                         age=64, sex="M", elig="INS", orec="0", medicaid=True)
         self.assertTrue(np.isclose(rp["risk_score"], 1.446)) # INS + Medicaid
         
+    def test_v28(self):
+        he = HCCEngine(version="28")
+        rp = he.profile(["E1169", "I5030", "I509", "I211", "I209", "R05"],
+                        age=70, sex="M", elig="CNA")
+        self.assertTrue(np.isclose(rp["risk_score"], 1.034))
+        self.assertTrue("CNA_D2" in rp["details"])
+
+    def test_esrd(self):
+        he = HCCEngine(version="ESRDv21")
+        rp = he.profile(["E1169", "I5030", "I509", "I211", "I209", "R05"],
+                        age=70, sex="M", elig="DI")
+        self.assertTrue(np.isclose(rp["risk_score"], 0.832))
+        self.assertTrue("DI_M70_74" in rp["details"])
+
 
     def test_hccdescription(self):
 

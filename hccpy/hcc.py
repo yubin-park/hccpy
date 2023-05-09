@@ -1,12 +1,14 @@
 import numpy as np
 from collections import Counter
 import hccpy.utils as utils
-import hccpy._V22I0ED2 as V22I0ED2 # age sex edits (v22, v23,  v24)
+import hccpy._V22I0ED2 as V22I0ED2 # age sex edits (v22, v23, v24, v28)
 import hccpy._V2218O1M as V2218O1M # interactions (v22)
 import hccpy._V2318P1M as V2318P1M # interactions (v23)
 import hccpy._V2419P1M as V2419P1M # interactions (v24)
-import hccpy._AGESEXV2 as AGESEXV2 # disabled/origds (v22, v23, v24)
-import hccpy._V2218O1P as V2218O1P # risk coefn (v22, v23, v24)
+import hccpy._V2823T2M as V2823T2M # interactions (v28)
+import hccpy._E2118P1M as E2118P1M # interactions (ESRD)
+import hccpy._AGESEXV2 as AGESEXV2 # disabled/origds (v22, v23, v24, v28)
+import hccpy._V2218O1P as V2218O1P # risk coefn (v22, v23, v24, v28)
 import hccpy._E2118P1P as E2118P1P # risk coefn for ESRD
 
 class HCCEngine:
@@ -43,6 +45,13 @@ class HCCEngine:
                 "label": "data/V24H86L1.TXT",
                 "label_short": "data/V24_label_short.json",
                 "hier": "data/V24H86H1.TXT"
+            },
+            "28": {
+                "dx2cc": {"2024": "data/F2823T2N_FY22FY23.TXT", 
+                          "Combined": "data/F2823T2N_FY22FY23.TXT"},
+                "coefn": "data/V28hcccoefn.csv",
+                "label": "data/V28115L3.TXT",
+                "hier": "data/V28115H1.TXT"
             },
             "ESRDv21": {
                 "dx2cc": {"2019": "data/F2118H1R.txt",
@@ -88,6 +97,10 @@ class HCCEngine:
             cc_lst = V2318P1M.create_interactions(cc_lst, disabled, age)
         elif self.version == "24":
             cc_lst = V2419P1M.create_interactions(cc_lst, disabled, age)
+        elif self.version == "28":
+            cc_lst = V2823T2M.create_interactions(cc_lst, disabled, age)
+        elif self.version == "ESRDv21":
+            cc_lst = E2118P1M.create_interactions(cc_lst, disabled, age)
 
         return cc_lst
 

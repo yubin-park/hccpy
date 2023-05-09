@@ -31,6 +31,12 @@ def get_risk_dct(coefn, hcc_lst, age, sex):
     
     # build hcc factor strings and add to risk_dict
     for hcc in hcc_lst:
+        # NOTE: Other Eligibilities are not implemented
+        # DI: dialysis model 
+        # DNE: dialysis new enrollees
+        # GC: graft community model
+        # GI: graft institutional model
+        # GNE: graft new enrollee
         elig_hcc = "DI_" + hcc
         risk_dct[elig_hcc] = coefn.get(elig_hcc, 0.0)
 

@@ -44,6 +44,7 @@ class HHSHCCEngine:
             if k in cc_cnt:
                 for v_i in v:
                     cc_cnt[v_i] -= 1
+       
         cc_lst = [k for k, v in cc_cnt.items() if v > 0]
         return cc_lst
 
@@ -96,14 +97,14 @@ class HHSHCCEngine:
         # rxc
         cc_dct.update({ndc:self.ndc2rxc[ndc] for ndc in rx_lst
                         if ndc in self.ndc2rxc})
-        cc_dct.update({hcpcs:self.hcpcs2rxc[pr] for pr in pr_lst
+        cc_dct.update({pr:self.hcpcs2rxc[pr] for pr in pr_lst
                         if pr in self.hcpcs2rxc})
 
         cc_dct = I0V05ED2.apply_agesex_edits(cc_dct, age, sex)
         hcc_lst_0 = self._apply_hierarchy(cc_dct, age, sex)
         hcc_lst = self._apply_interactions(hcc_lst_0, agegroup, age)
         risk_dct = V0519F3P.get_risk_dct(self.coefn, hcc_lst, 
-                                            agesexvar, agegroup, enroll_dur, plate) 
+                                    agesexvar, agegroup, enroll_dur, plate) 
 
         score = np.sum([x for x in risk_dct.values()])
         out = {

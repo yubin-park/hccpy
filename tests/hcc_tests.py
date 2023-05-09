@@ -85,6 +85,17 @@ class TestHCCEngine(unittest.TestCase):
         self.assertTrue(np.isclose(rp["risk_score"], 1.034))
         self.assertTrue("CNA_D2" in rp["details"])
 
+        # check the heart interaction patch
+        rp = he.profile(["Z95811", 
+                "E1169", "I5030", "I509", "I211", "I209", "R05"],
+                        age=70, sex="M", elig="CNA")
+        self.assertTrue("HCC223" in rp["hcc_lst"])
+        
+        rp = he.profile(["Z95811"],
+                        age=70, sex="M", elig="CNA")
+        self.assertTrue("HCC223" not in rp["hcc_lst"])
+
+
     def test_esrd(self):
         he = HCCEngine(version="ESRDv21")
         rp = he.profile(["E1169", "I5030", "I509", "I211", "I209", "R05"],

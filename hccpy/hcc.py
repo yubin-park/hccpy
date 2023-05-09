@@ -80,11 +80,19 @@ class HCCEngine:
         for dx, cc_lst in cc_dct.items():
             cc_lst_all += [cc for cc in cc_lst if cc != "HCCNA"]
         cc_cnt = Counter(set(cc_lst_all))
+         
+        if self.version == "28": # V28 weird patch for heart
+            if (cc_cnt["HCC223"] > 0 and 
+                (cc_cnt["HCC221"] + cc_cnt["HCC222"] + 
+                cc_cnt["HCC224"] + cc_cnt["HCC225"] + 
+                cc_cnt["HCC226"]) == 0):
+                cc_cnt["HCC223"] = 0
         
         for k, v in self.hier.items():
             if k in cc_cnt:
                 for v_i in v:
                     cc_cnt[v_i] -= 1
+
         cc_lst_unique = [k for k, v in cc_cnt.items() if v > 0]
         return cc_lst_unique
 
@@ -154,7 +162,7 @@ class HCCEngine:
 
         dx_set = {dx.strip().upper().replace(".","") for dx in dx_lst}
         cc_dct = {dx:self.dx2cc[dx] for dx in dx_set if dx in self.dx2cc}
-        cc_dct = V22I0ED2.apply_agesex_edits(cc_dct, age, sex)
+        cc_dct = V22I0ED2.apply_agesex_edits(cc_dct, age, sex) 
         hcc_lst = self._apply_hierarchy(cc_dct, age, sex)
         hcc_lst = self._apply_interactions(hcc_lst, age, disabled)
         if "ESRD" not in self.version:

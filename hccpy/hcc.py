@@ -86,6 +86,9 @@ class HCCEngine:
             cc_lst = V2318P1M.create_interactions(cc_lst, disabled, age)
         elif self.version == "24":
             cc_lst = V2419P1M.create_interactions(cc_lst, disabled, age)
+        elif self.version == "28":
+            # TODO: need to understand how to apply interactions for v28 - change this V2419P1M
+            cc_lst = V2419P1M.create_interactions(cc_lst, disabled, age)
 
         return cc_lst
 

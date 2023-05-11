@@ -42,8 +42,14 @@ class HCCEngine:
                 "label": "data/V24H86L1.TXT",
                 "label_short": "data/V24_label_short.json",
                 "hier": "data/V24H86H1.TXT"
+            },
+            "28": {
+                "dx2cc": { # finalized mappings
+                          "Combined": "data/F2823T2N_FY22FY23.TXT"},
+                "coefn": "data/hcccoefn_hccv28.csv",
+                "label": "data/V28115L3.TXT",
+                "hier": "data/V28115H1.TXT"
             }
-
         }
         assert fnmaps[version]["dx2cc"].get(dx2cc_year), "Invalid combination of version and year parameters"
         self.version = version

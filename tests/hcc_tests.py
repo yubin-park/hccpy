@@ -95,6 +95,12 @@ class TestHCCEngine(unittest.TestCase):
                         age=70, sex="M", elig="CNA")
         self.assertTrue("HCC223" not in rp["hcc_lst"])
 
+        # check age-sex edits
+        rp = he.profile(["D66"], age=70, sex="M", elig="CNA")
+        self.assertTrue("HCC111" in rp["hcc_lst"])
+        rp = he.profile(["D66"], age=70, sex="F", elig="CNA")
+        self.assertTrue("HCC112" in rp["hcc_lst"])
+
 
     def test_esrd(self):
         he = HCCEngine(version="ESRDv21")

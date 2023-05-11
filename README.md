@@ -144,7 +144,7 @@ Please use "V28" when initializing the engine.
 
 ```python
 >>> from hccpy.hcc import HCCEngine
->>> he = HCCEngine("V28")
+>>> he = HCCEngine("28")
 ```
 
 Also, see the examples in `tests`.

@@ -1,7 +1,8 @@
 import numpy as np
 from collections import Counter
 import hccpy.utils as utils
-import hccpy._V22I0ED2 as V22I0ED2 # age sex edits (v22, v23, v24, v28)
+import hccpy._V22I0ED2 as V22I0ED2 # age sex edits (v22, v23, v24)
+import hccpy._V28I0ED1 as V28I0ED1 # age sex edits (v28)
 import hccpy._V2218O1M as V2218O1M # interactions (v22)
 import hccpy._V2318P1M as V2318P1M # interactions (v23)
 import hccpy._V2419P1M as V2419P1M # interactions (v24)
@@ -162,7 +163,10 @@ class HCCEngine:
 
         dx_set = {dx.strip().upper().replace(".","") for dx in dx_lst}
         cc_dct = {dx:self.dx2cc[dx] for dx in dx_set if dx in self.dx2cc}
-        cc_dct = V22I0ED2.apply_agesex_edits(cc_dct, age, sex) 
+        if self.version == "28": 
+            cc_dct = V28I0ED1.apply_agesex_edits(cc_dct, age, sex) 
+        else: 
+            cc_dct = V22I0ED2.apply_agesex_edits(cc_dct, age, sex) 
         hcc_lst = self._apply_hierarchy(cc_dct, age, sex)
         hcc_lst = self._apply_interactions(hcc_lst, age, disabled)
         if "ESRD" not in self.version:

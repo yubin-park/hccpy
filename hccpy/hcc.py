@@ -1,4 +1,5 @@
 import numpy as np
+import re
 from collections import Counter
 import hccpy.utils as utils
 import hccpy._V22I0ED2 as V22I0ED2 # age sex edits (v22, v23, v24)
@@ -12,9 +13,36 @@ import hccpy._AGESEXV2 as AGESEXV2 # disabled/origds (v22, v23, v24, v28)
 import hccpy._V2218O1P as V2218O1P # risk coefn (v22, v23, v24, v28)
 import hccpy._E2118P1P as E2118P1P # risk coefn for ESRD
 
+
 class HCCEngine:
 
-    def __init__(self, version="24", dx2cc_year="Combined"):
+    def __init__(self, 
+                version="24", 
+                dx2cc_year="Combined", 
+                cif = 0.059, # coding intensity factor. 
+                norm_params={ # please see the note below. 
+                    "C": 1.015, 
+                    "D": 1.022, 
+                    "G": 1.028
+                    }
+                ):
+        # NOTE: contributed/inspired by @ronnie-canopy
+        #       modified by @yubin-park, for backward compatibility and 
+        #           extensibility
+        # Normalization Params (norm_params) can be configured manuallly
+        # By default, it has the 2024 normalization factors for now
+        # norm_parms need to have three keys, C, D, and G. 
+        #   C is for the community and institutional models, and
+        #   D and G for ESRD models; dialsys and functional graft.
+        # norm_params can change every year. For example,
+        # V24, Y2022, {"C": 1.118}
+        #       Y2023, {"C": 1.127}
+        #       Y2024, {"C": 1.146}
+        # V28, Y2024, {"C": 1.015}
+        # ESRDv21, Y2022, {"D": 1.077, "G": 1.126}
+        #           Y2023, {"D": 1.034, "G": 1.048}
+        #           Y2024, {"D": 1.022,  "G": 1.028}
+
         fnmaps = {
             "22": {
                 "dx2cc": {"2017": "data/F2217O1P.TXT",
@@ -65,6 +93,8 @@ class HCCEngine:
 
         assert fnmaps[version]["dx2cc"].get(dx2cc_year), "Invalid combination of version and year parameters"
         self.version = version
+        self.cif = cif
+        self.norm_params = norm_params
         self.dx2cc = utils.read_dx2cc(fnmaps[version]["dx2cc"][dx2cc_year])
         self.coefn = utils.read_coefn(fnmaps[version]["coefn"])
         self.label = utils.read_label(fnmaps[version]["label"])
@@ -175,9 +205,33 @@ class HCCEngine:
         else:
             risk_dct = E2118P1P.get_risk_dct(self.coefn, hcc_lst, age, sex)
 
-        score = np.sum([x for x in risk_dct.values()])
+        score = round(np.sum([x for x in risk_dct.values()]), 4)
+
+        demo_pttrn = r'[MF]\d{1,2}_?|[MF]6[5-9]|OriginallyDisabled_[MF]|LTIMCAID|ORIGDS'
+        score_age = round(np.sum([v for k, v in risk_dct.items() 
+                            if re.search(demo_pttrn, k)]), 4)
+
+        # by @ronnie-canopy
+        # apply normalization and 
+        # coding pattern adjustment when computing pricing RAF
+        adj_factor = 1
+        nf = 1 # normalization factor
+        if "ESRD" in self.version:
+            # We assume elig for ESRD is one of 
+            #   "DI", "GC", "GI", "DNE", "GNE"
+            nf = self.norm_params[elig[0]]
+        else:
+            nf = self.norm_params["C"]
+
+        adj_factor = (1 - self.cif) / nf
+        score_adj = round(score * adj_factor, 4)
+        score_age_adj = round(score_age * adj_factor, 4)
+
         out = {
                 "risk_score": score,
+                "risk_score_age": score_age,
+                "risk_score_adj": score_adj,
+                "risk_score_age_adj": score_age_adj,
                 "details": risk_dct,
                 "hcc_lst": hcc_lst,    # HCC list before interactions
                 "hcc_map": cc_dct,     # before applying hierarchy

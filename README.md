@@ -5,7 +5,7 @@ Hierachical Condition Categories Python Package.
 This module implements the [Hierachical Condition Categories](https://www.cms.gov/cciio/resources/forms-reports-and-other-resources/downloads/ra-march-31-white-paper-032416.pdf) that are used for adjusting risks for the Medicare population.
 The original SAS implementation can be found [here](https://www.nber.org/data/cms-risk-adjustment.html).
 
-The latest version is 0.1.7 which was released on 05/09/2023.
+The latest version is 0.1.9 which was released on 05/13/2023.
 
 Currently, hccpy supports:
 * CMS-HCC V22
@@ -138,16 +138,49 @@ To get a HCC profile from a list of diagnosis codes (in ICD-10):
 }
 >>>
 ```
+
 ### HCC for the new model, V28
 
 Please use "V28" when initializing the engine.
 
 ```python
 >>> from hccpy.hcc import HCCEngine
->>> he = HCCEngine("V28")
+>>> he = HCCEngine("28")
 ```
 
-Also, see the examples in `tests`.
+Also, see the `test_v23()` examples in `tests/hcc_tests.py`.
+
+### Coding Intensity Factor and Normalization Factors
+
+You can add normalization factors and coding intensity factors to directly calculate the adjusted risk score.
+
+By default, these two parameters are set as:
+
+```python
+cif = 0.059, # coding intensity factor.
+norm_params={ 
+  "C": 1.015, # community/institution models
+  "D": 1.022, # ESRD Dialysis
+  "G": 1.028 # ESRD Graft
+}
+```
+
+You can overwrite these parameters. For example, this setting below would not adjust the raw risk score.
+
+```python
+HCCEngine(version="28", cif = 0, norm_params={"C": 1})
+```
+
+To see the adjusted risk scores, 
+```python
+>>> from hccpy.hcc import HCCEngine
+>>> he = HCCEngine("28")
+>>> rp = he.profile(["E1169", "I5030", "I509", "I211", "I209", "R05"],
+                    age=70, sex="M", elig="CNA") 
+>>> rp["risk_score_adj"]
+```
+
+Also, see the `test_norm_factors()` examples in `tests/hcc_tests.py`.
 
 ### HCC-Profiling a New Member
 

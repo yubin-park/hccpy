@@ -95,6 +95,41 @@ class TestHCCEngine(unittest.TestCase):
                         age=70, sex="M", elig="CNA")
         self.assertTrue("HCC223" not in rp["hcc_lst"])
 
+        # check age-sex edits
+        rp = he.profile(["D66"], age=70, sex="M", elig="CNA")
+        self.assertTrue("HCC111" in rp["hcc_lst"])
+        rp = he.profile(["D66"], age=70, sex="F", elig="CNA")
+        self.assertTrue("HCC112" in rp["hcc_lst"])
+
+    def test_norm_factor(self):
+        he = HCCEngine(version="28")
+        rp = he.profile(["E1169", "I5030", "I509", "I211", "I209", "R05"],
+                        age=70, sex="M", elig="CNA")
+        self.assertTrue(np.isclose(rp["risk_score"], 1.034))
+        self.assertTrue(np.isclose(rp["risk_score_adj"], 0.9586))
+        self.assertTrue(np.isclose(rp["risk_score_adj"]/rp["risk_score"],
+                                    0.9270793036750483))
+        
+        # custom normalization factor
+        he = HCCEngine(version="28", norm_params={"C": 1})
+        rp = he.profile(["E1169", "I5030", "I509", "I211", "I209", "R05"],
+                        age=70, sex="M", elig="CNA")
+        self.assertTrue(np.isclose(rp["risk_score"], 1.034))
+        self.assertTrue(np.isclose(rp["risk_score_adj"], 0.973))
+
+        he = HCCEngine(version="28", cif = 0, norm_params={"C": 1})
+        rp = he.profile(["E1169", "I5030", "I509", "I211", "I209", "R05"],
+                        age=70, sex="M", elig="CNA")
+        self.assertTrue(np.isclose(rp["risk_score"], 1.034))
+        self.assertTrue(np.isclose(rp["risk_score_adj"], 1.034))
+        
+
+        he = HCCEngine(version="ESRDv21")
+        rp = he.profile(["E1169", "I5030", "I509", "I211", "I209", "R05"],
+                        age=70, sex="M", elig="DI")
+        self.assertTrue(np.isclose(rp["risk_score"], 0.832))
+        self.assertTrue(np.isclose(rp["risk_score_adj"], 0.7661))
+ 
 
     def test_esrd(self):
         he = HCCEngine(version="ESRDv21")

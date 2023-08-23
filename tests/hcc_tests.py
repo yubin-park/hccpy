@@ -69,6 +69,16 @@ class TestHCCEngine(unittest.TestCase):
         self.assertTrue(np.isclose(rp["risk_score"], 1.283))
         self.assertTrue("CNA_D3" in rp["details"])
         
+        # check for one diags introduced in the 2023 Mid-year update
+        he = HCCEngine(version="24", dx2cc_year="Combined")
+        rp = he.profile(["K7682"])
+        self.assertTrue("CNA_HCC27" in rp["details"])
+
+        # check dx2cc_year="2023"
+        he = HCCEngine(version="24", dx2cc_year="2023")
+        rp = he.profile(["K7682"])
+        self.assertTrue("CNA_HCC27" in rp["details"])
+
         # Test interactions
         rp = he.profile(["E109", "I509"],
                         age=80, sex="M", elig="CPA", orec="0", medicaid=True)

@@ -154,6 +154,11 @@ class HCCEngine:
             sex = smap[sex.lower()]
         return sex
 
+    def _agemap(self, age, orec):
+        if(age == 64 and orec == "0"):
+            age = 65
+        return age
+
     def profile(self, dx_lst, age=70, sex="M", 
                     elig="CNA", orec="0", medicaid=False):
         """Returns the HCC risk profile of a given patient information.
@@ -189,6 +194,7 @@ class HCCEngine:
         """
 
         sex = self._sexmap(sex)
+        age = self._agemap(age, orec)
         disabled, origds, elig = AGESEXV2.get_ds(age, orec, medicaid, elig)
 
         dx_set = {dx.strip().upper().replace(".","") for dx in dx_lst}

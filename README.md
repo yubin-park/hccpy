@@ -1,3 +1,13 @@
+# NOTICE - March 31, 2024
+
+I am in the process of rewriting the entire hccpy incorporating all the feedback and issues in the past. If you want to provide mode thoughts while I am in the process, please reach out to me on LinkedIn (https://www.linkedin.com/in/yubin-park-phd/) - the fastest way to reach me. 
+
+The new project will be hosted by @mimilabsai. 
+
+Best,
+
+Yubin
+
 # hccpy 
 
 Hierachical Condition Categories Python Package.

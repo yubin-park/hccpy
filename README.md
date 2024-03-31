@@ -2,7 +2,7 @@
 
 I am in the process of rewriting the entire hccpy incorporating all the feedback and issues in the past. If you want to provide mode thoughts while I am in the process, please reach out to me on LinkedIn (https://www.linkedin.com/in/yubin-park-phd/) - the fastest way to reach me. 
 
-The new project will be hosted by @mimilabsai. 
+The new project will be hosted by [https://github.com/mimilabs](https://github.com/mimilabs) - for more details, please see: [https://www.mimilabs.ai/projects/65e908d2972dde0f134d21db](https://www.mimilabs.ai/projects/65e908d2972dde0f134d21db)
 
 Best,
 

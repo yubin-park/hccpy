@@ -20,7 +20,7 @@ The latest version is 0.1.9 which was released on 05/13/2023.
 Currently, hccpy supports:
 * CMS-HCC V22
 * CMS-HCC V23
-* CMS-HCC V24
+* CMS-HCC V24 (Up to 2023 Midyear)
 * CMS-HCC V28
 * CMS-HCC ESRD
 * HHS-HCC 2019 (V05)

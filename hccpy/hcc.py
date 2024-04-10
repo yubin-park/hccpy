@@ -76,8 +76,8 @@ class HCCEngine:
                 "hier": "data/V24H86H1.TXT"
             },
             "28": {
-                "dx2cc": {"2024": "data/F2823T2N_FY22FY23.TXT", 
-                          "Combined": "data/F2823T2N_FY22FY23.TXT"},
+                "dx2cc": {"2024": "data/F2824T1N.TXT", 
+                          "Combined": "data/F2824T1N.TXT"},
                 "coefn": "data/V28hcccoefn.csv",
                 "label": "data/V28115L3.TXT",
                 "hier": "data/V28115H1.TXT"

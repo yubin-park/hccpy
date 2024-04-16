@@ -80,10 +80,10 @@ class TestHCCEngine(unittest.TestCase):
         
     def test_v28(self):
         he = HCCEngine(version="28")
-        rp = he.profile(["E1169", "I5030", "I509", "I211", "I209", "R05"],
+        rp = he.profile(["E1169", "I5030", "I509", "I211", "I209", "R05", "A4154"],
                         age=70, sex="M", elig="CNA")
-        self.assertTrue(np.isclose(rp["risk_score"], 1.034))
-        self.assertTrue("CNA_D2" in rp["details"])
+        self.assertTrue(np.isclose(rp["risk_score"], 1.534))
+        self.assertTrue("CNA_D3" in rp["details"])
 
         # check the heart interaction patch
         rp = he.profile(["Z95811", 

@@ -44,6 +44,16 @@ class TestHHSHCCEngine(unittest.TestCase):
         rp = hhe.profile([], rx_lst=["00003196401"], age=45)
         self.assertTrue("RXC_01" in rp["details"])
 
+    def test_hccmapping_rx(self):
+        hhe = HHSHCCEngine(myear="2022")
+        rp = hhe.profile(["E1169"], pr_lst=["J1817"], age=30)
+        self.assertTrue("RXC_06" in rp["details"])
+
+    def test_hierarchy(self):
+        hhe = HHSHCCEngine()  # defaults to 2022
+        rp = hhe.profile(['O34219', 'Z3A29'], age = 30)
+        self.assertTrue("HHS_HCC212" not in rp["details"])
+   
 if __name__ == "__main__":
 
     unittest.main()

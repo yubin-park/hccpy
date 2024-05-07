@@ -37,7 +37,7 @@ def create_interactions(cc_lst, DISABL):
     x["DIABETES_CHF"] = z["DIABETES"] * z["CHF"]
     x["gCopdCF_ASP_SPEC_BACT_PNEUM"]  = z["gCopdCF"] * x["HCC114"]
     x["ASP_SPEC_BACT_PNEUM_PRES_ULC"] = x["HCC114"]*x["PRESSURE_ULCER"]
-    x["SEPSIS_ASP_SPEC_BACT_PNEUM"] = x["SEPSIS"] * x["HCC114"]
+    x["SEPSIS_ASP_SPEC_BACT_PNEUM"] = z["SEPSIS"] * x["HCC114"]
     x["SCHIZOPHRENIA_gCopdCF"] = x["HCC57"] * z["gCopdCF"]
     x["SCHIZOPHRENIA_CHF"] = x["HCC57"] * z["CHF"]
     x["SCHIZOPHRENIA_SEIZURES"] = x["HCC57"] * x["HCC79"]

@@ -3,6 +3,7 @@
 build/
 dist/
 *.egg-info
+.vscode/
 
 # Compiled source #
 ###################

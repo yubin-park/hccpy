@@ -190,6 +190,7 @@ class HCCEngine:
 
         sex = self._sexmap(sex)
         disabled, origds, elig = AGESEXV2.get_ds(age, orec, medicaid, elig)
+        disabled, origds, origesrd, elig = AGESEXV2.get_ds(age, orec, medicaid, elig)
 
         dx_set = {dx.strip().upper().replace(".","") for dx in dx_lst}
         cc_dct = {dx:self.dx2cc[dx] for dx in dx_set if dx in self.dx2cc}

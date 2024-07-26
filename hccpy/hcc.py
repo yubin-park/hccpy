@@ -199,6 +199,12 @@ class HCCEngine:
             cc_dct = V22I0ED2.apply_agesex_edits(cc_dct, age, sex) 
         hcc_lst = self._apply_hierarchy(cc_dct, age, sex)
         hcc_lst = self._apply_interactions(hcc_lst, age, disabled)
+
+        # by @ronnie-canopy
+        # apply normalization and 
+        # coding pattern adjustment when computing pricing RAF
+        adj_factor = 1
+
         if "ESRD" not in self.version:
             risk_dct = V2218O1P.get_risk_dct(self.coefn, hcc_lst, age, 
                                         sex, elig, origds, medicaid)
@@ -211,10 +217,6 @@ class HCCEngine:
         score_age = round(np.sum([v for k, v in risk_dct.items() 
                             if re.search(demo_pttrn, k)]), 4)
 
-        # by @ronnie-canopy
-        # apply normalization and 
-        # coding pattern adjustment when computing pricing RAF
-        adj_factor = 1
         nf = 1 # normalization factor
         if "ESRD" in self.version:
             # We assume elig for ESRD is one of 
@@ -223,9 +225,15 @@ class HCCEngine:
         else:
             nf = self.norm_params["C"]
 
-        adj_factor = (1 - self.cif) / nf
-        score_adj = round(score * adj_factor, 4)
-        score_age_adj = round(score_age * adj_factor, 4)
+        cif = self.cif
+
+        # https://csscoperations.com/internet/csscw3.nsf/RiskAdjustmentMethodologyTranscript.pdf
+        # see page 1-11
+        score_norm = round(score / adj_factor / nf, 3)
+        score_age_norm = round(score_age / adj_factor / nf, 3) 
+
+        score_adj = round(score_norm * (1 - cif), 3)
+        score_age_adj = round(score_age_norm * (1 - cif), 3)
 
         out = {
                 "risk_score": score,
@@ -241,7 +249,10 @@ class HCCEngine:
                     "elig": elig,
                     "medicaid": medicaid,
                     "disabled": disabled,
-                    "origds": origds
+                    "origds": origds,
+                    "adj_factor": adj_factor,
+                    "cif": cif,
+                    "nf": nf,
                     },
                 "model": self.version
                 }

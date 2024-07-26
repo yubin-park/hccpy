@@ -9,10 +9,11 @@ import hccpy._V2318P1M as V2318P1M # interactions (v23)
 import hccpy._V2419P1M as V2419P1M # interactions (v24)
 import hccpy._V2823T2M as V2823T2M # interactions (v28)
 import hccpy._E2118P1M as E2118P1M # interactions (ESRD)
+import hccpy._E2423T1M as E2423T1M # interactions (ESRDv24)
 import hccpy._AGESEXV2 as AGESEXV2 # disabled/origds (v22, v23, v24, v28)
 import hccpy._V2218O1P as V2218O1P # risk coefn (v22, v23, v24, v28)
 import hccpy._E2118P1P as E2118P1P # risk coefn for ESRD
-
+import hccpy._E2423T1P as E2423T1P # risk coefn for ESRDv24
 
 class HCCEngine:
 
@@ -42,6 +43,7 @@ class HCCEngine:
         # ESRDv21, Y2022, {"D": 1.077, "G": 1.126}
         #           Y2023, {"D": 1.034, "G": 1.048}
         #           Y2024, {"D": 1.022,  "G": 1.028}
+
 
         fnmaps = {
             "22": {
@@ -88,6 +90,14 @@ class HCCEngine:
                 "coefn": "data/ESRDhcccoefn.csv",
                 "label": "data/V20H87L1.txt",
                 "hier": "data/V20H87H1.txt"
+            },
+            "ESRDv24": {
+                "dx2cc": {"2023": "data/F2423P1M.TXT",
+                          "Combined": "data/F2423P1M.TXT"},
+                "coefn": "data/D2423T2M.csv",
+                "label": "data/V24H86L1.TXT",
+                "label_short": "data/V24_label_short.json",
+                "hier": "data/V24H86H1.TXT"
             }
         }
 
@@ -140,6 +150,8 @@ class HCCEngine:
             cc_lst = V2823T2M.create_interactions(cc_lst, disabled, age)
         elif self.version == "ESRDv21":
             cc_lst = E2118P1M.create_interactions(cc_lst, disabled, age)
+        elif self.version == "ESRDv24":
+            cc_lst = E2423T1M.create_interactions(cc_lst, disabled, age)
 
         return cc_lst
 
@@ -155,7 +167,8 @@ class HCCEngine:
         return sex
 
     def profile(self, dx_lst, age=70, sex="M", 
-                    elig="CNA", orec="0", medicaid=False):
+                    elig="CNA", orec="0", medicaid=False,
+                    full_partial_nondual='N', lti=0, graft_duration=""):
         """Returns the HCC risk profile of a given patient information.
 
         Parameters
@@ -178,6 +191,17 @@ class HCCEngine:
                - "INS": Long Term Institutional
                - "NE": New Enrollee
                - "SNPNE": SNP NE
+               The following are allowed values related to the ESRDv24 model
+               and require the full_partial_nondual, lti and graft_duration
+               fields to also be populated:
+               - "DNE": Dialysis New Enrollee
+               - "GI": Institutional Post Graft
+               - "GNE": New Enrollee Post Graft
+               - "GF": Community Post Graft Full Dual
+               - "GNP": Community Post Graft Non-Dual or Partial Dual
+               - "DI": Dialysis
+               - "TRANSPLANT_KIDNEY_ONLY_1M": Transplant First Month
+               - "TRANSPLANT_KIDNEY_ONLY_2M": Transplant Second/Third Month
         orec: str
               Original reason for entitlement code.
               - "0": Old age and survivor's insurance
@@ -186,16 +210,32 @@ class HCCEngine:
               - "3": Both DIB and ESRD
         medicaid: bool
                   If the patient is in Medicaid or not.
+        full_partial_nondual: string
+              Full, Partial or Non-dual Eligibility status of the patient.
+              Used for Dual status interactions with Age/Sex for ESRDv24
+              dialysis model and "bump up factors" for ESRDv24 Graft models;
+              {"F", "P", "N"}
+        lti: int
+              LTI status of the patient. Used to determine LTI interaction
+              with Aged status for ESRDv24 dialysis model; {0, 1}
+        graft_duration : str
+            ESRDv24 post-graft duration band of the patient; Used
+            for ESRD Functioning Graft Factor (FGF) determination
+            - "": Not on Post-Graft Model
+            - "DUR4_9": 4-9 Months Post-Graft
+            - "DUR10PL": 10+ Months Post-Graft
         """
 
         sex = self._sexmap(sex)
-        disabled, origds, elig = AGESEXV2.get_ds(age, orec, medicaid, elig)
         disabled, origds, origesrd, elig = AGESEXV2.get_ds(age, orec, medicaid, elig)
 
         dx_set = {dx.strip().upper().replace(".","") for dx in dx_lst}
         cc_dct = {dx:self.dx2cc[dx] for dx in dx_set if dx in self.dx2cc}
         if self.version == "28": 
-            cc_dct = V28I0ED1.apply_agesex_edits(cc_dct, age, sex) 
+            cc_dct = V28I0ED1.apply_agesex_edits(cc_dct, age, sex)
+        elif self.version == "ESRDv24":
+            # gets taken care of in E2423T1P.get_risk_dct
+            pass
         else: 
             cc_dct = V22I0ED2.apply_agesex_edits(cc_dct, age, sex) 
         hcc_lst = self._apply_hierarchy(cc_dct, age, sex)
@@ -209,8 +249,15 @@ class HCCEngine:
         if "ESRD" not in self.version:
             risk_dct = V2218O1P.get_risk_dct(self.coefn, hcc_lst, age, 
                                         sex, elig, origds, medicaid)
-        else:
+
+        elif self.version == "ESRDv21":
             risk_dct = E2118P1P.get_risk_dct(self.coefn, hcc_lst, age, sex)
+        elif self.version == "ESRDv24":
+            # this model can get a different adj factor for NE FG
+            risk_dct, adj_factor = E2423T1P.get_risk_dct(self.coefn, hcc_lst, age,
+                                        sex, elig, origds, origesrd,
+                                        full_partial_nondual, disabled, lti, graft_duration)
+
 
         score = round(np.sum([x for x in risk_dct.values()]), 4)
 
@@ -220,13 +267,27 @@ class HCCEngine:
 
         nf = 1 # normalization factor
         if "ESRD" in self.version:
-            # We assume elig for ESRD is one of 
-            #   "DI", "GC", "GI", "DNE", "GNE"
-            nf = self.norm_params[elig[0]]
+            # Assume elig for ESRD is one of 
+            # "DI", "GC", "GI", "DNE", "GNE", "TRANSPLANT_KIDNEY_ONLY_XM"
+            # See E2424T2M: transplant model gets Dialysis normalization factor
+            if elig in {"TRANSPLANT_KIDNEY_ONLY_1M",
+                    "TRANSPLANT_KIDNEY_ONLY_2M",
+                    "TRANSPLANT_KIDNEY_ONLY_3M"}:
+                nf = self.norm_params["D"]
+            else:
+                nf = self.norm_params[elig[0]]
         else:
             nf = self.norm_params["C"]
 
         cif = self.cif
+        if elig in {"DI", "DNE",
+                    "TRANSPLANT_KIDNEY_ONLY_1M",
+                    "TRANSPLANT_KIDNEY_ONLY_2M",
+                    "TRANSPLANT_KIDNEY_ONLY_3M"} and self.version == 'ESRDv24':
+            # these model types do not have a CIF applied
+            cif = 0.0
+
+            
 
         # https://csscoperations.com/internet/csscw3.nsf/RiskAdjustmentMethodologyTranscript.pdf
         # see page 1-11

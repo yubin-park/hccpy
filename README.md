@@ -1,10 +1,12 @@
 # NOTICE - Dec 13, 2024
 
-📢 Repository Status Update
+# 📢 Repository Status Update
+
 This repository has been succeeded by a new version!
 We've created an enhanced version of this project with new features and improvements. You can find it here:
 🔗 github.com/mimilabs/hccinfhir
-What This Means
+
+# What This Means
 
 This repository is no longer actively maintained
 No new features or updates will be added here

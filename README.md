@@ -1,12 +1,18 @@
-# NOTICE - March 31, 2024
+# NOTICE - Dec 13, 2024
 
-I am in the process of rewriting the entire hccpy incorporating all the feedback and issues in the past. If you want to provide mode thoughts while I am in the process, please reach out to me on LinkedIn (https://www.linkedin.com/in/yubin-park-phd/) - the fastest way to reach me. 
+📢 Repository Status Update
+This repository has been succeeded by a new version!
+We've created an enhanced version of this project with new features and improvements. You can find it here:
+🔗 github.com/mimilabs/hccinfhir
+What This Means
 
-The new project will be hosted by [https://github.com/mimilabs](https://github.com/mimilabs) - for more details, please see: [https://www.mimilabs.ai/projects/65e908d2972dde0f134d21db](https://www.mimilabs.ai/projects/65e908d2972dde0f134d21db)
+This repository is no longer actively maintained
+No new features or updates will be added here
+For the latest features and support, please use the new repository
 
-Best,
+Thank you for your interest in this project! We encourage you to migrate to the new version to access the latest improvements.
 
-Yubin
+---
 
 # hccpy 
 

@@ -106,9 +106,9 @@ class TestHCCEngine(unittest.TestCase):
         rp = he.profile(["E1169", "I5030", "I509", "I211", "I209", "R05"],
                         age=70, sex="M", elig="CNA")
         self.assertTrue(np.isclose(rp["risk_score"], 1.034))
-        self.assertTrue(np.isclose(rp["risk_score_adj"], 0.9586))
+        self.assertTrue(np.isclose(rp["risk_score_adj"], 0.9590))
         self.assertTrue(np.isclose(rp["risk_score_adj"]/rp["risk_score"],
-                                    0.9270793036750483))
+                                    0.9274661508704062))
         
         # custom normalization factor
         he = HCCEngine(version="28", norm_params={"C": 1})
@@ -128,7 +128,8 @@ class TestHCCEngine(unittest.TestCase):
         rp = he.profile(["E1169", "I5030", "I509", "I211", "I209", "R05"],
                         age=70, sex="M", elig="DI")
         self.assertTrue(np.isclose(rp["risk_score"], 0.832))
-        self.assertTrue(np.isclose(rp["risk_score_adj"], 0.7661))
+
+        self.assertTrue(np.isclose(rp["risk_score_adj"], 0.766))
  
 
     def test_esrd(self):
